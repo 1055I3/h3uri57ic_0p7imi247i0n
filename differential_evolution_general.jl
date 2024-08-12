@@ -43,7 +43,7 @@ struct Continuous <: Variable
     end
 end
 
-struct Categorical <: Variable
+struct Categorical <: Variable # implement categorical
     value::UInt64;
 
     function Categorical()
@@ -149,6 +149,11 @@ function differential_evolution_generations_limit_generic(population::Matrix{<:V
                                           selection,
                                           crossover,
                                           mutate)
+end
+
+# TODO: writie initialization
+function initialize()
+    _
 end
 
 # function DE_rand_1_bin(...)
