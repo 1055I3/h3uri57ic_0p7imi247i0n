@@ -45,11 +45,16 @@ end
 
 struct Categorical <: Variable # implement categorical
     value::UInt64;
+    domain::Tuple{String};
 
-    function Categorical()
-        new();
+    function Categorical(domain::Tuple{String})
+        value = findfirst(x -> x == rand(domain), domain);
+
+        new(value, domain);
     end
 end
+
+# helper functions
 
 check_bounds(lower_bound::T, upper_bound::T) where {T<:Number} = upper_bound < lower_bound && error("1D10T :: LOWER BOUND $(lower_bound) GREATER THAN THE UPPER BOUND $(upper_bound)\n");
 
@@ -111,7 +116,7 @@ function Base.(-)(first::Continuous, second::Continuous)
                     first.upper_bound);
 end
 
-# heuristic
+# the heuristic
 
 function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
                                         stopping_condition::Function,
