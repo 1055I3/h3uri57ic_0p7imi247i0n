@@ -170,6 +170,8 @@ function crossover(p::Float64,
     return d, u;
 end
 
+# consider bitrand for crossover
+
 function selection(population::Matrix{<:Variable})
     while true
         sample = rand(population, 3);
