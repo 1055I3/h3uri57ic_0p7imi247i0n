@@ -1,4 +1,4 @@
-# define types
+# define variable types
 
 abstract type Variable end
 
@@ -43,6 +43,7 @@ struct Continuous <: Variable
     end
 end
 
+# TODO: kill this
 struct Categorical <: Variable # implement categorical
     value::UInt64;
     domain::Tuple{String};
@@ -118,12 +119,24 @@ end
 
 # the heuristic
 
+abstract type Stats end
+
+mutable struct GenLimit <: Stats
+    value::UInt64;
+
+    function GenLimit()
+        starting_generation::UInt64 = 0;
+        new(starting_generation);
+    end
+end
+
 function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
-                                        stopping_condition::Function,
+                                        stopping_condition!::Function,
                                         selection::Function,
                                         crossover::Function,
-                                        mutate::Function)
-    while stopping_condition()
+                                        mutate::Function,
+                                        stats::Stats)
+    while stopping_condition!(stats)
         for x in population
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
@@ -135,26 +148,27 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
     return evaluate(population)
 end
 
-function differential_evolution_generations_limit_generic(population::Matrix{<:Variable},
-                                                          gen_limit::UInt64,
-                                                          selection::Function,
-                                                          crossover::Function,
-                                                          mutate::Function)
-    function number_of_generations_limit(gen_limit::UInt64)
-        condition = generation < gen_limit;
-        generation += 1;
+# TODO: remove this and use the struct instead
+# function differential_evolution_generations_limit_generic(population::Matrix{<:Variable},
+#                                                           gen_limit::UInt64,
+#                                                           selection::Function,
+#                                                           crossover::Function,
+#                                                           mutate::Function)
+#     function number_of_generations_limit(gen_limit::UInt64)
+#         condition = generation < gen_limit;
+#         generation += 1;
 
-        return condition
-    end
+#         return condition
+#     end
 
-    generation::UInt64 = 0;
+#     generation::UInt64 = 0;
 
-    return differential_evolution_generic(population,
-                                          ()->number_of_generations_limit(gen_limit),
-                                          selection,
-                                          crossover,
-                                          mutate)
-end
+#     return differential_evolution_generic(population,
+#                                           ()->number_of_generations_limit(gen_limit),
+#                                           selection,
+#                                           crossover,
+#                                           mutate)
+# end
 
 # TODO: writie initialization
 function initialize()
