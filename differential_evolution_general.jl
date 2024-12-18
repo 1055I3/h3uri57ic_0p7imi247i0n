@@ -44,22 +44,24 @@ struct Continuous <: Variable
 end
 
 # TODO: kill this
-struct Categorical <: Variable # implement categorical
-    value::UInt64;
-    domain::Tuple{String};
+# struct Categorical <: Variable # implement categorical
+#     value::UInt64;
+#     domain::Tuple{String};
 
-    function Categorical(domain::Tuple{String})
-        value = findfirst(x -> x == rand(domain), domain);
+#     function Categorical(domain::Tuple{String})
+#         value = findfirst(x -> x == rand(domain), domain);
 
-        new(value, domain);
-    end
-end
+#         new(value, domain);
+#     end
+# end
 
 # helper functions
 
 check_bounds(lower_bound::T, upper_bound::T) where {T<:Number} = upper_bound < lower_bound && error("1D10T :: LOWER BOUND $(lower_bound) GREATER THAN THE UPPER BOUND $(upper_bound)\n");
 
 # define operations
+
+# TODO: write generic functions that will do the the bound checking and return random val if out of bounds
 
 function Base.(*)(first::Float64, second::Discrete)
     x = first * second.value;
@@ -123,11 +125,17 @@ abstract type Stats end
 
 mutable struct GenLimit <: Stats
     value::UInt64;
+    limit::UInt64;
 
-    function GenLimit()
-        starting_generation::UInt64 = 0;
-        new(starting_generation);
+    function GenLimit(limit::UInt64)
+        starting_generation::UInt64 = UInt64(0);
+
+        new(starting_generation, limit);
     end
+end
+
+function stopping_condition!(_, stats::GenLimit)
+    return stats.value < stats.limit;
 end
 
 function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
@@ -136,7 +144,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         crossover::Function,
                                         mutate::Function,
                                         stats::Stats)
-    while stopping_condition!(stats)
+    while stopping_condition!(population, stats)
         for x in population
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
@@ -148,7 +156,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
     return evaluate(population)
 end
 
-# TODO: remove this and use the struct instead
+# TODO: kill this and use the struct instead
 # function differential_evolution_generations_limit_generic(population::Matrix{<:Variable},
 #                                                           gen_limit::UInt64,
 #                                                           selection::Function,
