@@ -135,11 +135,12 @@ mutable struct GenLimit <: Stats
 end
 
 function stopping_condition!(_, stats::GenLimit)
+    stats.value += 1;
+
     return stats.value < stats.limit;
 end
 
 function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
-                                        stopping_condition!::Function,
                                         selection::Function,
                                         crossover::Function,
                                         mutate::Function,
