@@ -144,17 +144,44 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         selection::Function,
                                         crossover::Function,
                                         mutate::Function,
+                                        evaluate::Function,
                                         stats::Stats)
+    tasks_per_thread = 2;
+
+    cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
+    cohorts = partition(population, cohort_size);
+
     while stopping_condition!(population, stats)
-        for x in population
-            individuals = selection(population); # select
-            d, u = crossover(x); # crossover
-            v = mutate(x, individuals, d, u); # mutate
-            x = evaluate(x, v); # evaluate
+        tasks = map(cohorts) do cohort
+            @spawn begin
+                new_cohort = [] # TODO: fix this make more static i guess prealocate or something
+
+                for x in cohort
+                    individuals = selection(population); # select
+                    d, u = crossover(x); # crossover
+                    v = mutate(x, individuals, d, u); # mutate
+                    x = evaluate(x, v); # evaluate
+
+                    push!(new_cohort, x) # TODO: eliminate dynamic appending
+                end
+
+                return new_cohort
+            end
         end
+
+        new_cohorts = fetch.(tasks)
+        population = merge(new_cohorts) # TODO: make do with some actual function or operator for joining arrays
+
+        # TODO: kill the single minded
+        # for x in population
+        #     individuals = selection(population); # select
+        #     d, u = crossover(x); # crossover
+        #     v = mutate(x, individuals, d, u); # mutate
+        #     x = evaluate(x, v); # evaluate
+        # end
     end
 
-    return evaluate(population)
+    return evaluate(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
 end
 
 # TODO: kill this and use the struct instead
