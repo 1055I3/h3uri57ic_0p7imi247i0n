@@ -148,7 +148,8 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         crossover::Function,
                                         mutate::Function,
                                         evaluate::Function,
-                                        stats::Stats)
+                                        stats::Stats,
+                                        tasks_per_thread::)
     tasks_per_thread = 2;
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
 
@@ -164,6 +165,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                     d, u = crossover(x); # crossover
                     v = mutate(x, individuals, d, u); # mutate
                     x = evaluate(x, v); # evaluate
+                    # TODO: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
 
                     new_cohort[i] = x
                 end
@@ -184,7 +186,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
         # end
     end
 
-    return evaluate(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
+    return evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
 end
 
 # TODO: kill this and use the struct instead
