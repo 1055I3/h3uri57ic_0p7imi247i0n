@@ -165,6 +165,8 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                     v = mutate(x, individuals, d, u); # mutate
                     x = evaluate(x, v); # evaluate
                     # TODO: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
+                    # TODO: where to keep evaluated values?
+                    # TODO: every function should do one thing and one thing only
 
                     new_cohort[i] = x
                 end
