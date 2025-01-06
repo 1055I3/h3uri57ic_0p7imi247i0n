@@ -157,15 +157,15 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
 
         tasks = map(cohorts) do cohort
             @spawn begin
-                new_cohort = [] # TODO: fix this make more static i guess prealocate or something
+                new_cohort = Matrix{<:Variable}(undef, cohort_size)
 
-                for x in cohort
+                for (i, x) in enumerate(cohort)
                     individuals = selection(population); # select
                     d, u = crossover(x); # crossover
                     v = mutate(x, individuals, d, u); # mutate
                     x = evaluate(x, v); # evaluate
 
-                    push!(new_cohort, x) # TODO: eliminate dynamic appending
+                    new_cohort[i] = x
                 end
 
                 return new_cohort
