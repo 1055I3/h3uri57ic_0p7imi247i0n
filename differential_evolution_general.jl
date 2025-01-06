@@ -124,11 +124,11 @@ end
 abstract type Stats end
 
 mutable struct GenLimit <: Stats
-    value::UInt64;
-    limit::UInt64;
+    value::Int64;
+    limit::Int64;
 
-    function GenLimit(limit::UInt64)
-        starting_generation::UInt64 = UInt64(0);
+    function GenLimit(limit::Int64)
+        starting_generation::Int64 = 0;
 
         new(starting_generation, limit);
     end
@@ -149,8 +149,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         mutate::Function,
                                         evaluate::Function,
                                         stats::Stats,
-                                        tasks_per_thread::)
-    tasks_per_thread = 2;
+                                        tasks_per_thread::Int64 = 2)
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
 
     while stopping_condition!(population, stats)
@@ -237,7 +236,7 @@ end
 function mutate(ω::Float64,
                 x::Vector{<:Variable},
                 individuals::Tuple{Vector{<:Variable}},
-                d::UInt64,
+                d::Int64,
                 u::Vector{Bool})
     a, b, c = individuals;
 
