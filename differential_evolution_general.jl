@@ -140,6 +140,9 @@ function stopping_condition!(_, stats::GenLimit)
     return stats.value < stats.limit;
 end
 
+using Base.Iterators: flatten, partition
+using Base.Threads: nthreads, @spawn
+
 function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
                                         selection::Function,
                                         crossover::Function,
@@ -147,11 +150,11 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         evaluate::Function,
                                         stats::Stats)
     tasks_per_thread = 2;
-
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
-    cohorts = partition(population, cohort_size);
 
     while stopping_condition!(population, stats)
+        cohorts = partition(population, cohort_size);
+
         tasks = map(cohorts) do cohort
             @spawn begin
                 new_cohort = [] # TODO: fix this make more static i guess prealocate or something
@@ -170,7 +173,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
         end
 
         new_cohorts = fetch.(tasks)
-        population = merge(new_cohorts) # TODO: make do with some actual function or operator for joining arrays
+        population = collect(flatten(new_cohorts))
 
         # TODO: kill the single minded
         # for x in population
