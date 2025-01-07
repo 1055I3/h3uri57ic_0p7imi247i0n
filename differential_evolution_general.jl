@@ -135,9 +135,14 @@ mutable struct GenLimit <: Stats
 end
 
 function stopping_condition!(_, stats::GenLimit)
+    stop = stats.value < stats.limit;
     stats.value += 1;
 
-    return stats.value < stats.limit;
+    return stop;
+end
+
+function update_stats!(_)
+    return nothing;
 end
 
 using Base.Iterators: flatten, partition
@@ -153,6 +158,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
     scores = evaluate.(population);
 
+    # TODO: check scores for stopping condition - keep the scores in stats? update stats function with multiple methods?
     while stopping_condition!(population, stats)
         cohorts = partition(population, cohort_size);
         cohorts_scores = partition(scores, cohort_size);
@@ -171,9 +177,9 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                     f = evaluate(v);
                     improved = f < cohort_scores[i];
                     @inbounds x = improved ? v : x;
-                    # TODO: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
-                    # TODO: where to keep evaluated values?
-                    # TODO: every function should do one thing and one thing only
+                    # done: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
+                    # done: where to keep evaluated values?
+                    # done: every function should do one thing and one thing only
                     @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
                     @inbounds new_cohort[i] = x;
                 end
@@ -185,6 +191,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
         new_cohorts, new_scores = fetch.(tasks);
         population = (collect ∘ flatten)(new_cohorts);
         scores = (collect ∘ flatten)(new_scores);
+        update_stats!(scores);
     end
 
     return population, evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
