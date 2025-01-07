@@ -148,46 +148,46 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         crossover::Function,
                                         mutate::Function,
                                         evaluate::Function,
-                                        stats::Stats,
+                                        stats::Stats;
                                         tasks_per_thread::Int64 = 2)
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
+    scores = evaluate.(population);
 
     while stopping_condition!(population, stats)
         cohorts = partition(population, cohort_size);
+        cohorts_scores = partition(scores, cohort_size);
 
-        tasks = map(cohorts) do cohort
+        tasks = map(cohorts, cohorts_scores) do cohort, cohort_scores
             @spawn begin
                 new_cohort = Matrix{<:Variable}(undef, cohort_size)
+                new_cohort_scores = Vector{<:Number}{undef, cohort_size}
 
                 for (i, x) in enumerate(cohort)
                     individuals = selection(population); # select
                     d, u = crossover(x); # crossover
                     v = mutate(x, individuals, d, u); # mutate
-                    x = evaluate(x, v); # evaluate
+
+                    # evaluate
+                    f = evaluate(v);
+                    improved = f < cohort_scores[i];
+                    @inbounds x = improved ? v : x;
                     # TODO: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
                     # TODO: where to keep evaluated values?
                     # TODO: every function should do one thing and one thing only
-
-                    new_cohort[i] = x
+                    @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
+                    @inbounds new_cohort[i] = x;
                 end
 
-                return new_cohort
+                return new_cohort, new_cohort_scores;
             end
         end
 
-        new_cohorts = fetch.(tasks)
-        population = collect(flatten(new_cohorts))
-
-        # TODO: kill the single minded
-        # for x in population
-        #     individuals = selection(population); # select
-        #     d, u = crossover(x); # crossover
-        #     v = mutate(x, individuals, d, u); # mutate
-        #     x = evaluate(x, v); # evaluate
-        # end
+        new_cohorts, new_scores = fetch.(tasks);
+        population = (collect ∘ flatten)(new_cohorts);
+        scores = (collect ∘ flatten)(new_scores);
     end
 
-    return evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
+    return population, evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
 end
 
 # TODO: kill this and use the struct instead
