@@ -153,7 +153,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         crossover::Function,
                                         mutate::Function,
                                         evaluate::Function,
-                                        stats::Stats;
+                                        stats::Stats; # fix this abstract horror
                                         tasks_per_thread::Int64 = 2)
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
     scores = evaluate.(population);
