@@ -134,7 +134,7 @@ mutable struct GenLimit <: Stats
     end
 end
 
-function stopping_condition!(_, stats::GenLimit)
+function stopping_condition!(stats::GenLimit)
     stop = stats.value < stats.limit;
     stats.value += 1;
 
@@ -159,7 +159,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
     scores = evaluate.(population);
 
     # TODO: check scores for stopping condition - keep the scores in stats? update stats function with multiple methods?
-    while stopping_condition!(population, stats)
+    while stopping_condition!(stats)
         cohorts = partition(population, cohort_size);
         cohorts_scores = partition(scores, cohort_size);
 
