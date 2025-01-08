@@ -153,7 +153,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
                                         crossover::Function,
                                         mutate::Function,
                                         evaluate::Function,
-                                        stats::Stats; # fix this abstract horror, functions too
+                                        stats::Stats; # fix this abstract horror, functions too # first make everything else work
                                         tasks_per_thread::Int64 = 2)
     cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
     scores = evaluate.(population);
@@ -165,8 +165,8 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
 
         tasks = map(cohorts, cohorts_scores) do cohort, cohort_scores
             @spawn begin
-                new_cohort = Matrix{<:Variable}(undef, cohort_size) # check these initializations
-                new_cohort_scores = Vector{<:Number}{undef, cohort_size}
+                new_cohort = similar(cohort);
+                new_cohort_scores = similar(cohort_scores);
 
                 for (i, x) in enumerate(cohort)
                     individuals = selection(population); # select
