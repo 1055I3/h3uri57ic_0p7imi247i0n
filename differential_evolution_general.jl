@@ -141,7 +141,7 @@ function stopping_condition!(stats::GenLimit)
     return stop;
 end
 
-function update_stats!(_)
+function update_stats!(_, _)
     return nothing;
 end
 
@@ -191,7 +191,7 @@ function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix
         new_cohorts, new_scores = fetch.(tasks);
         population = (collect ∘ flatten)(new_cohorts);
         scores = (collect ∘ flatten)(new_scores);
-        update_stats!(scores);
+        update_stats!(population, scores);
     end
 
     return population, evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
@@ -219,10 +219,15 @@ end
 #                                           mutate)
 # end
 
-# TODO: writie initialization
-function initialize()
-    _
-end
+# TODO: writie initialization # what am i supposed to do here?!
+# function initialize(n_continuous::Int64, n_discrete::Int64, pupulation_size::Int64)
+#     population = Matrix{Variable}(undef, pupulation_size, n_continuous + n_discrete);
+
+#     for i in 1:population_size
+#         for j in 1:n_continuous
+#             population[i, j] =
+#     end
+# end
 
 # function DE_rand_1_bin(...)
 function crossover(p::Float64,
