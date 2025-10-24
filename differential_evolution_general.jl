@@ -257,5 +257,15 @@ function mutate(ω::Float64,
     [(u[i] || i == d) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
 end
 
+# benchmark suite
+# TODO: promlem jer Continuous implementira mutaciju ako se pregaze granice - preci na AbstractFloat - implementirati kastovanje
+sphere(X::Vector{<:Continuous}) = sum(x -> x^2, X; init=0);
+rosenbrocks(X::Vector{<:Continuous}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]); init=0);
+step(X::Vector{<:Continuous}) = sum(floor.(X); init=0);
+quartic(X::Vector{<:Continuous}) = sum((x, i) -> i*x^4+1/(1+exp(-1.702*randn())), zip(X, 1:length(X)));
+sheckels(X::Vector{<:Continuous}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao globalne konstante
+rastrigins(X::Vector{<:Continuous}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
+ackleys(X::Vector{<:Continuous}) = -20*exp(-0.2*sqrt(mean(X.^2))) - exp(mean(cos.(2π.*X))) + 20 + ℯ;
+rotated_elipsoid(X::Vector{<:Continuous}) = sum((1:length(X)) .* X.^2);
 
 # end
