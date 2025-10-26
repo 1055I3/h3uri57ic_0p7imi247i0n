@@ -1,5 +1,10 @@
 # define variable types
 
+using Random
+using Distributions
+
+Random.seed!(42);
+
 abstract type Variable end
 
 struct Discrete <: Variable # Discrete
