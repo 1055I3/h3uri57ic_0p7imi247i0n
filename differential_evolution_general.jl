@@ -259,14 +259,15 @@ end
 
 # benchmark suite
 # TODO: promlem jer Continuous implementira mutaciju ako se pregaze granice - preci na AbstractFloat - implementirati kastovanje
-sphere(X::Vector{<:Continuous}) = sum(X.^2);
-rosenbrock(X::Vector{<:Continuous}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
-step(X::Vector{<:Continuous}) = sum(floor.(X));
-griewank(X::Vector{<:Continuous}) = 1 + sum(X.^2)/4000 - prod(cos.(X[i]/sqrt(i)) for i in eachindex(X));
-styblinski_tang(X::Vector{<:Continuous}) = sum(x -> x^4-16*x^2+5*x, X)/2;
-sheckel(X::Vector{<:Continuous}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao globalne konstante
-rastrigin(X::Vector{<:Continuous}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
-ackley(X::Vector{<:Continuous}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
-rotated_elipsoid(X::Vector{<:Continuous}) = sum((1:length(X)) .* X.^2);
+
+sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
+rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
+step(X::Vector{<:AbstractFloat}) = sum(floor.(X));
+griewank(X::Vector{<:AbstractFloat}) = 1 + sum(X.^2)/4000 - prod(cos.(X./sqrt.(1:length(X))));
+styblinski_tang(X::Vector{<:AbstractFloat}) = sum(x -> x^4-16*x^2+5*x, X)/2;
+sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao globalne konstante
+rastrigin(X::Vector{<:AbstractFloat}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
+ackley(X::Vector{<:AbstractFloat}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
+rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
 
 # end
