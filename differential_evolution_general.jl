@@ -2,6 +2,7 @@
 
 using Random
 using Distributions
+using Optim
 
 Random.seed!(42);
 
