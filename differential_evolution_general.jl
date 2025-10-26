@@ -38,90 +38,46 @@ end
 using Base.Iterators: flatten, partition
 using Base.Threads: nthreads, @spawn
 
-function differential_evolution_generic(population::Matrix{<:Variable}, # Matrix{Union{}}
+function differential_evolution_generic(objective::Function,
+                                        constraint_function::Function,
+                                        bounds::Matrix{<:Number},
+                                        population::Matrix{<:Number}, # Matrix{Union{}}
+                                        stopping_condition!::Function,
                                         selection::Function,
                                         crossover::Function,
                                         mutate::Function,
-                                        evaluate::Function,
-                                        stats::Stats; # fix this abstract horror, functions too # first make everything else work
-                                        tasks_per_thread::Int64 = 2)
-    cohort_size = max(1, length(population) ÷ (tasks_per_thread * nthreads()));
+                                        evaluate::Function)
     scores = evaluate.(population);
+    stats::Stats = Stats();
 
     # TODO: check scores for stopping condition - keep the scores in stats? update stats function with multiple methods?
     while stopping_condition!(stats)
-        cohorts = partition(population, cohort_size);
-        cohorts_scores = partition(scores, cohort_size);
+        @threads for (i, x) in enumerate(population)
+            individuals = selection(population); # select
+            d, u = crossover(x); # crossover
+            v = mutate(x, individuals, d, u); # mutate
 
-        tasks = map(cohorts, cohorts_scores) do cohort, cohort_scores
-            @spawn begin
-                new_cohort = similar(cohort);
-                new_cohort_scores = similar(cohort_scores);
-
-                for (i, x) in enumerate(cohort)
-                    individuals = selection(population); # select
-                    d, u = crossover(x); # crossover
-                    v = mutate(x, individuals, d, u); # mutate
-
-                    # evaluate
-                    f = evaluate(v);
-                    improved = f < cohort_scores[i];
-                    @inbounds x = improved ? v : x;
-                    # done: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
-                    # done: where to keep evaluated values?
-                    # done: every function should do one thing and one thing only
-                    @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
-                    @inbounds new_cohort[i] = x;
-                end
-
-                return new_cohort, new_cohort_scores;
-            end
+            # evaluate
+            f = evaluate(v);
+            improved = f < cohort_scores[i];
+            @inbounds x = improved ? v : x;
+            # done: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
+            # done: where to keep evaluated values?
+            # done: every function should do one thing and one thing only
+            @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
+            @inbounds new_cohort[i] = x;
         end
+    end
 
-        new_cohorts, new_scores = fetch.(tasks);
-        population = (collect ∘ flatten)(new_cohorts);
-        scores = (collect ∘ flatten)(new_scores);
         update_stats!(population, scores);
     end
 
     return population, evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
 end
 
-# TODO: kill this and use the struct instead
-# function differential_evolution_generations_limit_generic(population::Matrix{<:Variable},
-#                                                           gen_limit::UInt64,
-#                                                           selection::Function,
-#                                                           crossover::Function,
-#                                                           mutate::Function)
-#     function number_of_generations_limit(gen_limit::UInt64)
-#         condition = generation < gen_limit;
-#         generation += 1;
-
-#         return condition
-#     end
-
-#     generation::UInt64 = 0;
-
-#     return differential_evolution_generic(population,
-#                                           ()->number_of_generations_limit(gen_limit),
-#                                           selection,
-#                                           crossover,
-#                                           mutate)
-# end
-
-# TODO: writie initialization # what am i supposed to do here?!
-# function initialize(n_continuous::Int64, n_discrete::Int64, pupulation_size::Int64)
-#     population = Matrix{Variable}(undef, pupulation_size, n_continuous + n_discrete);
-
-#     for i in 1:population_size
-#         for j in 1:n_continuous
-#             population[i, j] =
-#     end
-# end
-
-# function DE_rand_1_bin(...)
+# function de_rand_1_bin(...)
 function crossover(p::Float64,
-                   individual::Vector{<:Variable})
+                   individual::Vector{<:Number})
     d = rand(eachindex(individual));
     u = [p < a for a in rand(Float64, length(individual))];
 
