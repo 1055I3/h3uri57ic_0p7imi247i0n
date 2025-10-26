@@ -41,12 +41,11 @@ using Base.Threads: nthreads, @spawn
 function differential_evolution_generic(objective::Function,
                                         constraint_function::Function,
                                         bounds::Matrix{<:Number},
-                                        population::Matrix{<:Number}, # Matrix{Union{}}
+                                        population_size
                                         stopping_condition!::Function,
                                         selection::Function,
                                         crossover::Function,
-                                        mutate::Function,
-                                        evaluate::Function)
+                                        mutate::Function)
     scores = evaluate.(population);
     stats::Stats = Stats();
 
@@ -56,6 +55,7 @@ function differential_evolution_generic(objective::Function,
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
             v = mutate(x, individuals, d, u); # mutate
+            # Apply bounds to mutant vector
 
             # evaluate
             f = evaluate(v);
