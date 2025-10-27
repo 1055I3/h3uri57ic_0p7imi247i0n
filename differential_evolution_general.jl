@@ -179,6 +179,25 @@ function de_rand_1_max_iter(objective::Function,
                                           (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
 end
 
+function de_rand_1_fitness_threshold(objective::Function,
+                                     constraint_functions::Vector{Function},
+                                     upper_bounds::Vector{<:Number},
+                                     lower_bounds::Vector{<:Number},
+                                     population_size::Int64,
+                                     fitness_threshold::Float64,
+                                     p::Float64,
+                                     ω::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          fitness_threshold_stop(fitness_threshold),
+                                          selection_rand_1,
+                                          x -> crossover(p, x),
+                                          (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
+end
+
 # TODO: rand_best_2
 
 # TODO: SDE
