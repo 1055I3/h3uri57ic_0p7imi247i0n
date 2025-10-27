@@ -362,6 +362,25 @@ function sde_rand_1_fitness_threshold(objective::Function,
                                           mutate_sde_rand_1(length(upper_bounds)));
 end
 
+function sde_rand_1_no_improvement(objective::Function,
+                                   constraint_functions::Vector{Function},
+                                   upper_bounds::Vector{<:Number},
+                                   lower_bounds::Vector{<:Number},
+                                   population_size::Int64,
+                                   no_imprevement_iters::Int64,
+                                   no_improvement_threshold::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          no_improvement_stop(no_imprevement_iters,
+                                                              no_improvement_threshold),
+                                          selection_rand_1,
+                                          crossover_sa(),
+                                          mutate_sde_rand_1(length(upper_bounds)));
+end
+
 # benchmark suite
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
 rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
