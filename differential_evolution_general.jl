@@ -78,6 +78,8 @@ function differential_evolution_generic(objective::Function,
         cs::Vector{Float64} = [cf(individual) for cf in constraint_functions];
         return objective(individual)*prod([c>eps ? 100.0*c^2 : 1.0 for c in cs]); 
     end
+    enforce_bounds(x::T, upper::T, lower::T) where {T<:Integer} = lower≤x && x≤upper ? x : rand(upper:lower);
+    enforce_bounds(x::T, upper::T, lower::T) where {T<:AbstractFloat} = lower≤x && x≤upper ? x : rand()*(upper-lower)+lower;
 
     get_diff(upper::T, lower::T) where {T<:Integer} = upper - lower + 1;
     get_diff(upper::T, lower::T) where {T<:AbstractFloat} = upper - lower;
@@ -91,6 +93,7 @@ function differential_evolution_generic(objective::Function,
     while stopping_condition(stats)
         new_generation::Matrix{<:Number} = similar(population);
         new_scores::Vector{Float64} = similar(scores);
+        evaluations::Int64 = 0;
 
         @threads for i in 1:population_size
             x = pupulation[i];
@@ -105,7 +108,7 @@ function differential_evolution_generic(objective::Function,
             v = mutate(x, individuals, d, u);
 
             # apply bounds to mutant vector
-            v = enforce(v, upper_bounds, lower_bounds); # TODO: implement enforce
+            v = enforce_bounds.(v, upper_bounds. lower_bounds);
 
             # evaluate fitness of the new individual
             f = evaluate(v);
@@ -122,7 +125,7 @@ function differential_evolution_generic(objective::Function,
         # update the stats; in each iteration we make population_size number of evaluation function calls
         population = new_generation;
         scores = new_scores;
-        evaluations = population_size
+        evaluations = population_size;
         update_stats!(population, scores, evaluations, stats);
     end
 
