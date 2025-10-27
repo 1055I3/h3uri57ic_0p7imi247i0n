@@ -4,7 +4,8 @@ using Iterators
 using Optim
 
 # constants
-const eps::Float64 = 1.0e-12;
+const eps::Float64 = 1.0e-14;
+const N::Int64 = 128;
 const seed::Int64 = 42;
 Random.seed!(seed);
 
@@ -71,7 +72,7 @@ function differential_evolution_generic(objective::Function,
                                         mutate::Function)
     evaluate(individual::Vector{<:Number}) = begin
         cs::Vector{Float64} = [cf(individual) for cf in constraint_functions];
-        return objective(individual)*prod([c>eps ? 100.0*c^2 : 1.0 for c in cs]); 
+        return objective(individual)*prod([abs(c)>eps ? c : 1.0 for c in cs]);
     end
     enforce_bounds(x::T, upper::T, lower::T) where {T<:Number} = lower≤x && x≤upper ? x : new_chromosome(upper, lower);
     new_chromosome(upper::T, lower::T) where {T<:Integer} = rand(upper:lower);
@@ -383,15 +384,61 @@ end
 
 # benchmark suite
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
+sphere_constraint(X::Vector{<:AbstractFloat}) = 1;
+sphere_upper_bound::Vector{Float64} = [Inf64 for _ in 1:N];
+sphere_lower_bound::Vector{Float64} = [-Inf64 for _ in 1:N];
+
 rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
+rosenbrock_constraint(X::Vector{<:AbstractFloat}) = 1;
+rosenbrock_upper_bound::Vector{Float64} = [Inf64 for _ in 1:N];
+rosenbrock_lower_bound::Vector{Float64} = [-Inf64 for _ in 1:N];
+
 step(X::Vector{<:AbstractFloat}) = sum(floor.(X));
+step_constraint(X::Vector{<:AbstractFloat}) = 1;
+step_upper_bound::Vector{Float64} = [5.12 for _ in 1:N];
+step_lower_bound::Vector{Float64} = [-5.12 for _ in 1:N];
+
 griewank(X::Vector{<:AbstractFloat}) = 1 + sum(X.^2)/4000 - prod(cos.(X./sqrt.(1:length(X))));
+griewank_constraint(X::Vector{<:AbstractFloat}) = 1;
+griewank_upper_bound::Vector{Float64} = [Inf64 for _ in 1:N];
+griewank_lower_bound::Vector{Float64} = [-Inf64 for _ in 1:N];
+
 styblinski_tang(X::Vector{<:AbstractFloat}) = sum(x -> x^4-16*x^2+5*x, X)/2;
+styblinski_tang_constraint(X::Vector{<:AbstractFloat}) = 1;
+styblinski_tang_upper_bound::Vector{Float64} = [5 for _ in 1:N];
+styblinski_tang_lower_bound::Vector{Float64} = [-5 for _ in 1:N];
+
 sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao konstante vam funkcije
+sheckel_constraint(X::Vector{<:AbstractFloat}) = 1;
+sheckel_upper_bound::Vector{Float64} = [Inf64 for _ in 1:N];
+sheckel_lower_bound::Vector{Float64} = [-Inf64 for _ in 1:N];
+
 rastrigin(X::Vector{<:AbstractFloat}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
+rastrigin_constraint(X::Vector{<:AbstractFloat}) = 1;
+rastrigin_upper_bound::Vector{Float64} = [5.12 for _ in 1:N];
+rastrigin_lower_bound::Vector{Float64} = [-5.12 for _ in 1:N];
+
 ackley(X::Vector{<:AbstractFloat}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
+ackley_constraint(X::Vector{<:AbstractFloat}) = 1;
+ackley_upper_bound::Vector{Float64} = [65.536 for _ in 1:N];
+ackley_lower_bound::Vector{Float64} = [-65.536 for _ in 1:N];
+
 rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
-# TODO: keane_bump with contraits
+rotated_elipsoid_constraint(_) = 1;
+rotated_elipsoid_upper_bound::Vector{Float64} = [32.768 for _ in 1:N];
+rotated_elipsoid_lower_bound::Vector{Float64} = [-32.768 for _ in 1:N];
+
+keane_bump(X::Vector{<:AbstractFloat}) = -abs((sum(cos.(X).^4) - 2*prod(cos.(X).^2)) / sqrt(sum(i * X[i]^2 for i in 1:length(X))));
+keane_constraint_1(X::Vector{<:AbstractFloat}) = begin
+    c1::Float64 = 0.75 - prod(X);
+    return c1 < 0 ? 1 : c1*75;
+end
+keane_constraint_2(X::Vector{<:AbstractFloat}) = begin
+    c2::Float64 = sum(X) - 7.5*length(X);
+    return c2 < 0 ? 1 : c2*75;
+end
+keane_upper_bound::Vector{Float64} = [10 for _ in 1:N];
+keane_lower_bound::Vector{Float64} = [0 for _ in 1:N];
 
 # examples
 # TODO: graph coloring
