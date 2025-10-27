@@ -1,13 +1,12 @@
 using Random
 using Distributions: Normal
-using Base.Threads: @threads
+using Base.Threads: @spawn, fetch
 using Base.Iterators: Flatten
-# using Iterators
-using Optim
+using Optim: optimize, NelderMead, SimulatedAnnealing, ParticleSwarm
 
 # constants
 const eps::Float64 = 1.0e-14;
-const N::Int64 = 128;
+const N::Int64 = 16;
 const seed::Int64 = 42;
 Random.seed!(seed);
 
@@ -91,6 +90,7 @@ function differential_evolution_generic(objective::Function,
         new_scores::Vector{Float64} = similar(scores);
         evaluations::Int64 = 0;
 
+        # TODO: @threads - fix all the elusive race conditions
         for i in 1:population_size
             x = population[i];
 
@@ -436,17 +436,104 @@ keane_lower_bound::Vector{Float64} = [0 for _ in 1:N];
 # examples
 # TODO: graph coloring
 
-# end
+sphere_rand_1_handle = @spawn de_rand_1_no_improvement(sphere, [x -> 1], sphere_upper_bound, sphere_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+rosenbrock_rand_1_handle = @spawn de_rand_1_no_improvement(rosenbrock, [x -> 1], rosenbrock_upper_bound, rosenbrock_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+step_rand_1_handle = @spawn de_rand_1_no_improvement(step, [x -> 1], step_upper_bound, step_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+griewank_rand_1_handle = @spawn de_rand_1_no_improvement(griewank, [x -> 1], griewank_upper_bound, griewank_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+styblinski_rand_1_tang_handle = @spawn de_rand_1_no_improvement(styblinski_tang, [x -> 1], styblinski_tang_upper_bound, styblinski_tang_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+sheckel_rand_1_handle = @spawn de_rand_1_no_improvement(sheckel, [x -> 1], sheckel_upper_bound, sheckel_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+rastrigin_rand_1_handle = @spawn de_rand_1_no_improvement(rastrigin, [x -> 1], rastrigin_upper_bound, rastrigin_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+ackley_rand_1_handle = @spawn de_rand_1_no_improvement(ackley, [x -> 1], ackley_upper_bound, ackley_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+rotated_elipsoid_rand_1_handle = @spawn de_rand_1_no_improvement(rotated_elipsoid, [x -> 1], rotated_elipsoid_upper_bound, rotated_elipsoid_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
+keane_bump_rand_1_handle = @spawn de_rand_1_no_improvement(keane_bump, [keane_constraint_1, keane_constraint_2], keane_upper_bound, keane_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.4);
 
-sphere_rand_1_result = de_rand_1_max_iter(sphere, [x -> 1], sphere_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
-rosenbrock_rand_1_result  = de_rand_1_max_iter(rosenbrock, [x -> 1], rosenbrock_upper_bound, rosenbrock_lower_bound, 20*N, 2^16, 0.1, 0.4);
-step_result_rand_1_result = de_rand_1_max_iter(step, [x -> 1], step_upper_bound, step_lower_bound, 20*N, 2^16, 0.1, 0.4);
-griewank_rand_1_result_result = de_rand_1_max_iter(griewank, [x -> 1], griewank_upper_bound, griewank_lower_bound, 20*N, 2^16, 0.1, 0.4);
-styblinski_rand_1_tang_result = de_rand_1_max_iter(styblinski, [x -> 1], styblinski_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
-sheckel_rand_1_result = de_rand_1_max_iter(sheckel, [x -> 1], sheckel_upper_bound, sheckel_lower_bound, 20*N, 2^16, 0.1, 0.4);
-rastrigin_rand_1_result = de_rand_1_max_iter(rastrigin, [x -> 1], rastrigin_upper_bound, rastrigin_lower_bound, 20*N, 2^16, 0.1, 0.4);
-ackley_rand_1_result = de_rand_1_max_iter(ackley, [x -> 1], ackley_upper_bound, ackley_lower_bound, 20*N, 2^16, 0.1, 0.4);
-rotated_elipsoid_rand_1_result = de_rand_1_max_iter(rotated_elipsoid, [x -> 1], rotated_elipsoid_upper_bound, rotated_elipsoid_lower_bound, 20*N, 2^16, 0.1, 0.4);
-keane_bump_rand_1_result = de_rand_1_max_iter(keane_bump, [keane_constraint_1, keane_constraint_2], sphere_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
+sphere_best_2_handle = @spawn de_best_2_no_improvement(sphere, [x -> 1], sphere_upper_bound, sphere_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+rosenbrock_best_2_handle = @spawn de_best_2_no_improvement(rosenbrock, [x -> 1], rosenbrock_upper_bound, rosenbrock_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+step_best_2_handle = @spawn de_best_2_no_improvement(step, [x -> 1], step_upper_bound, step_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+griewank_best_2_handle = @spawn de_best_2_no_improvement(griewank, [x -> 1], griewank_upper_bound, griewank_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+styblinski_best_2_tang_handle = @spawn de_best_2_no_improvement(styblinski_tang, [x -> 1], styblinski_tang_upper_bound, styblinski_tang_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+sheckel_best_2_handle = @spawn de_best_2_no_improvement(sheckel, [x -> 1], sheckel_upper_bound, sheckel_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+rastrigin_best_2_handle = @spawn de_best_2_no_improvement(rastrigin, [x -> 1], rastrigin_upper_bound, rastrigin_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+ackley_best_2_handle = @spawn de_best_2_no_improvement(ackley, [x -> 1], ackley_upper_bound, ackley_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+rotated_best_2_handle = @spawn de_best_2_no_improvement(rotated_elipsoid, [x -> 1], rotated_elipsoid_upper_bound, rotated_elipsoid_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+keane_bump_best_2_handle = @spawn de_best_2_no_improvement(keane_bump, [keane_constraint_1, keane_constraint_2], keane_upper_bound, keane_lower_bound, 20*N, 2^6, 1.0e-8, 0.1, 0.2, 0.2);
+
+sphere_sde_handle = @spawn sde_rand_1_no_improvement(sphere, [x -> 1], sphere_upper_bound, sphere_lower_bound, 20*N, 2^6, 1.0e-8);
+rosenbrock_sde_handle = @spawn sde_rand_1_no_improvement(rosenbrock, [x -> 1], rosenbrock_upper_bound, rosenbrock_lower_bound, 20*N, 2^6, 1.0e-8);
+step_sde_handle = @spawn sde_rand_1_no_improvement(step, [x -> 1], step_upper_bound, step_lower_bound, 20*N, 2^6, 1.0e-8);
+griewank_sde_handle = @spawn sde_rand_1_no_improvement(griewank, [x -> 1], griewank_upper_bound, griewank_lower_bound, 20*N, 2^6, 1.0e-8);
+styblinski_sde_tang_handle = @spawn sde_rand_1_no_improvement(styblinski_tang, [x -> 1], styblinski_tang_upper_bound, styblinski_tang_lower_bound, 20*N, 2^6, 1.0e-8);
+sheckel_sde_handle = @spawn sde_rand_1_no_improvement(sheckel, [x -> 1], sheckel_upper_bound, sheckel_lower_bound, 20*N, 2^6, 1.0e-8);
+rastrigin_sde_handle = @spawn sde_rand_1_no_improvement(rastrigin, [x -> 1], rastrigin_upper_bound, rastrigin_lower_bound, 20*N, 2^6, 1.0e-8);
+ackley_sde_handle = @spawn sde_rand_1_no_improvement(ackley, [x -> 1], ackley_upper_bound, ackley_lower_bound, 20*N, 2^6, 1.0e-8);
+rotated_sde_handle = @spawn sde_rand_1_no_improvement(rotated_elipsoid, [x -> 1], rotated_elipsoid_upper_bound, rotated_elipsoid_lower_bound, 20*N, 2^6, 1.0e-8);
+keane_bump_sde_handle = @spawn sde_rand_1_no_improvement(keane_bump, [keane_constraint_1, keane_constraint_2], keane_upper_bound, keane_lower_bound, 20*N, 2^6, 1.0e-8);
+
+sphere_rand_1_result = fetch(sphere_rand_1_handle);
+rosenbrock_rand_1_result = fetch(rosenbrock_rand_1_handle);
+step_rand_1_result = fetch(step_rand_1_handle);
+griewank_rand_1_result = fetch(griewank_rand_1_handle);
+styblinski_rand_1_tang_result = fetch(styblinski_rand_1_tang_handle);
+sheckel_rand_1_result = fetch(sheckel_rand_1_handle);
+rastrigin_rand_1_result = fetch(rastrigin_rand_1_handle);
+ackley_rand_1_result = fetch(ackley_rand_1_handle);
+rotated_elipsoid_rand_1_result = fetch(rotated_elipsoid_rand_1_handle);
+keane_bump_rand_1_result = fetch(keane_bump_rand_1_handle);
+
+sphere_best_2_result = fetch(sphere_best_2_handle);
+rosenbrock_best_2_result = fetch(rosenbrock_best_2_handle);
+step_best_2_result = fetch(step_best_2_handle);
+griewank_best_2_result = fetch(griewank_best_2_handle);
+styblinski_best_2_tang_result = fetch(styblinski_best_2_tang_handle);
+sheckel_best_2_result = fetch(sheckel_best_2_handle);
+rastrigin_best_2_1_result = fetch(rastrigin_best_2_handle);
+ackley_best_2_result = fetch(ackley_best_2_handle);
+rotated_best_2_result = fetch(rotated_best_2_handle);
+keane_bump_best_2_result = fetch(keane_bump_best_2_handle);
+
+sphere_sde_result = fetch(sphere_sde_handle);
+rosenbrock_sde_result = fetch(rosenbrock_sde_handle);
+step_sde_result = fetch(step_sde_handle);
+griewank_sde_result = fetch(griewank_sde_handle);
+styblinski_sde_tang_result = fetch(styblinski_sde_tang_handle);
+sheckel_sde_result = fetch(sheckel_sde_handle);
+rastrigin_sde_result = fetch(rastrigin_sde_handle);
+ackley_sde_result = fetch(ackley_sde_handle);
+rotated_sde_result = fetch(rotated_sde_handle);
+keane_bump_sde_result = fetch(keane_bump_sde_handle);
+
+sphere_simplex_result = optimize(sphere, [0 for  _ in 1:N], NelderMead());
+rosenbrock_simplex_result = optimize(rosenbrock, [0 for  _ in 1:N], NelderMead());
+step_result_simplex_result = optimize(step, [0 for  _ in 1:N], NelderMead());
+griewank_simplex_result = optimize(griewank, [0 for  _ in 1:N], NelderMead());
+styblinski_simplex_result = optimize(styblinski_tang, [0 for  _ in 1:N], NelderMead());
+sheckel_simplex_result = optimize(sheckel, [0 for  _ in 1:N], NelderMead());
+rastrigin_simplex_result = optimize(rastrigin, [0 for  _ in 1:N], NelderMead());
+ackley_simplex_result = optimize(ackley, [0 for  _ in 1:N], NelderMead());
+rotated_simplex_result = optimize(rotated_elipsoid, [0 for  _ in 1:N], NelderMead());
+
+sphere_simulated_annealing_result = optimize(sphere, [0 for  _ in 1:N], SimulatedAnnealing());
+rosenbrock_simulated_annealing_result = optimize(rosenbrock, [0 for  _ in 1:N], SimulatedAnnealing());
+step_result_simulated_annealing_result = optimize(step, [0 for  _ in 1:N], SimulatedAnnealing());
+griewank_simulated_annealing_result = optimize(griewank, [0 for  _ in 1:N], SimulatedAnnealing());
+styblinski_simulated_annealing_result = optimize(styblinski_tang, [0 for  _ in 1:N], SimulatedAnnealing());
+sheckel_simulated_annealing_result = optimize(sheckel, [0 for  _ in 1:N], SimulatedAnnealing());
+rastrigin_simulated_annealing_result = optimize(rastrigin, [0 for  _ in 1:N], SimulatedAnnealing());
+ackley_simulated_annealing_result = optimize(ackley, [0 for  _ in 1:N], SimulatedAnnealing());
+rotated_simulated_annealing_result = optimize(rotated_elipsoid, [0 for  _ in 1:N], SimulatedAnnealing());
+
+sphere_particle_swarm_result = optimize(sphere, [0 for  _ in 1:N], ParticleSwarm());
+rosenbrock_particle_swarm_result = optimize(rosenbrock, [0 for  _ in 1:N], ParticleSwarm());
+step_result_particle_swarm_result = optimize(step, [0 for  _ in 1:N], ParticleSwarm());
+griewank_particle_swarm_result = optimize(griewank, [0 for  _ in 1:N], ParticleSwarm());
+styblinski_particle_swarm_result = optimize(styblinski_tang, [0 for  _ in 1:N], ParticleSwarm());
+sheckel_particle_swarm_result = optimize(sheckel, [0 for  _ in 1:N], ParticleSwarm());
+rastrigin_particle_swarm_result = optimize(rastrigin, [0 for  _ in 1:N], ParticleSwarm());
+ackley_particle_swarm_result = optimize(ackley, [0 for  _ in 1:N], ParticleSwarm());
+rotated_particle_swarm_result = optimize(rotated_elipsoid, [0 for  _ in 1:N], ParticleSwarm());
+
+# visualize
 
 println(result.best_score_history[end], result.population_diversity_history[end]);
+
+# end
