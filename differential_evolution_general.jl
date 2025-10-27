@@ -78,14 +78,12 @@ function differential_evolution_generic(objective::Function,
         cs::Vector{Float64} = [cf(individual) for cf in constraint_functions];
         return objective(individual)*prod([c>eps ? 100.0*c^2 : 1.0 for c in cs]); 
     end
-    enforce_bounds(x::T, upper::T, lower::T) where {T<:Integer} = lower≤x && x≤upper ? x : rand(upper:lower);
-    enforce_bounds(x::T, upper::T, lower::T) where {T<:AbstractFloat} = lower≤x && x≤upper ? x : rand()*(upper-lower)+lower;
-
-    get_diff(upper::T, lower::T) where {T<:Integer} = upper - lower + 1;
-    get_diff(upper::T, lower::T) where {T<:AbstractFloat} = upper - lower;
+    enforce_bounds(x::T, upper::T, lower::T) where {T<:Number} = lower≤x && x≤upper ? x : new_chromosome(upper, lower);
+    new_chromosome(upper::T, lower::T) where {T<:Integer} = rand(upper:lower);
+    new_chromosome(upper::T, lower::T) where {T<:AbstractFloat} = rand()*(upper-lower)+lower;
 
     # initialize the population and stats
-    population::Matrix{<:Number} = (lower_bounds .+ get_diff.(upper_bounds, lower_bounds) .* rand(Float64, (length(upper_bounds), population_size)));
+    population::Matrix{<:Number} = [[new_chromosome(upper, lower) for (upper, lower) in zip(upper_bounds, lower_bounds)] for _ in 1:population_size]
     scores::Vector{Float64} = evaluate.(population);
     stats::PerformanceHistory = PerformanceHistory();
     update_stats!(population, scores, 1, stats);
@@ -108,7 +106,7 @@ function differential_evolution_generic(objective::Function,
             v = mutate(x, individuals, d, u);
 
             # apply bounds to mutant vector
-            v = enforce_bounds.(v, upper_bounds. lower_bounds);
+            v = enforce_bounds.(v, upper_bounds, lower_bounds);
 
             # evaluate fitness of the new individual
             f = evaluate(v);
@@ -161,8 +159,6 @@ function mutate(ω::Float64,
 end
 
 # benchmark suite
-# TODO: promlem jer Continuous implementira mutaciju ako se pregaze granice - preci na AbstractFloat - implementirati kastovanje
-
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
 rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
 step(X::Vector{<:AbstractFloat}) = sum(floor.(X));
@@ -172,5 +168,9 @@ sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 .
 rastrigin(X::Vector{<:AbstractFloat}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
 ackley(X::Vector{<:AbstractFloat}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
 rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
+# TODO: keane_bump with contraits
+
+# examples
+# TODO: graph coloring
 
 # end
