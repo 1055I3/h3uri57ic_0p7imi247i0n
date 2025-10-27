@@ -91,32 +91,40 @@ function differential_evolution_generic(objective::Function,
     while stopping_condition(stats)
         new_generation::Matrix{<:Number} = similar(population);
         new_scores::Vector{Float64} = similar(scores);
-        evaluations::Int64 = 0;
 
         @threads for i in 1:population_size
-            individuals = selection(population); # select
-            d, u = crossover(x); # crossover
-            v = mutate(x, individuals, d, u); # mutate
+            x = pupulation[i];
+
+            # select vectors for mutation
+            individuals = selection(population);
+
+            # get the crossover vector for an individual
+            d, u = crossover(x);
+
+            # generate a new individual
+            v = mutate(x, individuals, d, u);
+
             # apply bounds to mutant vector
+            v = enforce(v, upper_bounds, lower_bounds); # TODO: implement enforce
 
-            # evaluate # TODO: fix with objective and constraint
+            # evaluate fitness of the new individual
             f = evaluate(v);
-            evaluations += 1;
 
-            improved = f < cohort_scores[i];
-            @inbounds x = improved ? v : x;
-            # done: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
-            # done: where to keep evaluated values?
-            # done: every function should do one thing and one thing only
-            @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
-            @inbounds new_cohort[i] = x;
+            if f < scores[i]
+                @inbounds new_generation[i] = v;
+                @inbounds new_scores[i] = f;
+            else
+                @inbounds new_generation[i] = population[i];
+                @inbounds new_scores[i] = scores[i];
+            end
         end
 
+        # update the stats; in each iteration we make population_size number of evaluation function calls
         population = new_generation;
         scores = new_scores;
+        evaluations = population_size
         update_stats!(population, scores, evaluations, stats);
     end
-
 
     return stats;
 end
