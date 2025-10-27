@@ -52,7 +52,7 @@ end
 # the stopping conditions
 
 function max_iterations_stop(max_iterations::Int64)
-    return stats::PerformanceHistory -> length(stats.population_diversity_history) < max_iterations;
+    return stats::PerformanceHistory -> length(stats.population_diversity_history) ≤ max_iterations;
 end
 
 function fitness_threshold_stop(fitness_threshold::Float64)
@@ -60,7 +60,7 @@ function fitness_threshold_stop(fitness_threshold::Float64)
 end
 
 function no_improvement_stop(max_no_improve::Int64)
-    return stats::PerformanceHistory -> max_no_improve < length(stats.best_score_history) && issorted(stats.best_score_history[end-max_no_improve+1:end]);
+    return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(diff(stats.best_score_history[end-max_no_improve+1:end]) .< eps);
 end
 
 # the heuristic
@@ -82,16 +82,18 @@ function differential_evolution_generic(objective::Function,
     get_diff(upper::T, lower::T) where {T<:Integer} = upper - lower + 1;
     get_diff(upper::T, lower::T) where {T<:AbstractFloat} = upper - lower;
 
-    population::Matrix{<:Number} = (lower_bounds .+ get_diff.(upper_bounds, lower_bounds) .* rand(length(upper_bounds), population_size));
+    # initialize the population and stats
+    population::Matrix{<:Number} = (lower_bounds .+ get_diff.(upper_bounds, lower_bounds) .* rand(Float64, (length(upper_bounds), population_size)));
     scores::Vector{Float64} = evaluate.(population);
     stats::PerformanceHistory = PerformanceHistory();
+    update_stats!(population, scores, 1, stats);
 
     while stopping_condition(stats)
         new_generation::Matrix{<:Number} = similar(population);
         new_scores::Vector{Float64} = similar(scores);
         evaluations::Int64 = 0;
 
-        @threads for (i, x) in enumerate(population)
+        @threads for i in 1:population_size
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
             v = mutate(x, individuals, d, u); # mutate
