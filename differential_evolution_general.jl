@@ -1,6 +1,8 @@
 using Random
-using Distributions
-using Iterators
+using Distributions: Normal
+using Base.Threads: @threads
+using Base.Iterators: Flatten
+# using Iterators
 using Optim
 
 # constants
@@ -62,7 +64,7 @@ end
 
 # the heuristic
 function differential_evolution_generic(objective::Function,
-                                        constraint_functions::Vector{Function},
+                                        constraint_functions::Vector{<:Function},
                                         upper_bounds::Vector{<:Number},
                                         lower_bounds::Vector{<:Number},
                                         population_size::Int64,
@@ -90,7 +92,7 @@ function differential_evolution_generic(objective::Function,
         evaluations::Int64 = 0;
 
         @threads for i in 1:population_size
-            x = pupulation[i];
+            x = population[i];
 
             # select vectors for mutation
             individuals = selection(population,
@@ -100,7 +102,7 @@ function differential_evolution_generic(objective::Function,
             u = crossover(x);
 
             # generate a new individual
-            v = mutate(x, individuals, d, u);
+            v = mutate(x, individuals, u);
 
             # apply bounds to mutant vector
             v = enforce_bounds.(v, upper_bounds, lower_bounds);
@@ -170,7 +172,7 @@ function mutate_rand_1(ω::Float64,
 end
 
 function de_rand_1_max_iter(objective::Function,
-                            constraint_functions::Vector{Function},
+                            constraint_functions::Vector{<:Function},
                             upper_bounds::Vector{<:Number},
                             lower_bounds::Vector{<:Number},
                             population_size::Int64,
@@ -318,7 +320,7 @@ function mutate_sde_rand_1(dimension::Int64)
 
     return (x, individuals, u) -> begin
         evolve_omega() = begin
-            ω1, ω2, ω3 = collect(Flatten(selection_rand_1([[o] for o in ω], _)));
+            ω1, ω2, ω3 = collect(Flatten(selection_rand_1([[o] for o in ω], nothing)));
             return ω1 + rand(rnd)*(ω2 - ω3);
         end
         ω = [evolve_omega() for _ in ω];
@@ -445,4 +447,5 @@ keane_lower_bound::Vector{Float64} = [0 for _ in 1:N];
 
 # end
 
-
+result = de_rand_1_max_iter(sphere, [sphere_constraint], sphere_upper_bound, sphere_lower_bound, 20*N, 2^32, 0.1, 0.4);
+println(result.best_score_history[end], result.population_diversity_history[end]);
