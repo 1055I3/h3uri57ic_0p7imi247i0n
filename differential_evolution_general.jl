@@ -4,6 +4,7 @@ using Random
 using Distributions
 using Optim
 
+const eps::Float64 = 1.0e-12;
 const seed::Int64 = 42;
 Random.seed!(seed);
 
@@ -65,31 +66,41 @@ end
 # the heuristic
 
 function differential_evolution_generic(objective::Function,
-                                        constraint_function::Function,
-                                        boundary_constraints::Matrix{<:Number},
-                                        individual::Vector{<:Number},
+                                        constraint_functions::Vector{Function},
+                                        upper_bounds::Vector{<:Number},
+                                        lower_bounds::Vector{<:Number},
                                         population_size::Int64,
                                         stopping_condition::Function,
                                         selection::Function,
                                         crossover::Function,
                                         mutate::Function)
-    population::Matrix{<:Number}; # TODO: generate initial population
+    evaluate(individual::Vector{<:Number}) = begin
+        cs::Vector{Float64} = [cf(individual) for cf in constraint_functions];
+        return objective(individual)*prod([c>eps ? 100.0*c^2 : 1.0 for c in cs]); 
+    end
+
+    get_diff(upper::T, lower::T) where {T<:Integer} = upper - lower + 1;
+    get_diff(upper::T, lower::T) where {T<:AbstractFloat} = upper - lower;
+
+    population::Matrix{<:Number} = (lower_bounds .+ get_diff.(upper_bounds, lower_bounds) .* rand(length(upper_bounds), population_size));
     scores::Vector{Float64} = evaluate.(population);
     stats::PerformanceHistory = PerformanceHistory();
 
-    # TODO: check scores for stopping condition - keep the scores in stats? update stats function with multiple methods?
     while stopping_condition(stats)
         new_generation::Matrix{<:Number} = similar(population);
         new_scores::Vector{Float64} = similar(scores);
+        evaluations::Int64 = 0;
 
         @threads for (i, x) in enumerate(population)
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
             v = mutate(x, individuals, d, u); # mutate
-            # Apply bounds to mutant vector
+            # apply bounds to mutant vector
 
-            # evaluate
+            # evaluate # TODO: fix with objective and constraint
             f = evaluate(v);
+            evaluations += 1;
+
             improved = f < cohort_scores[i];
             @inbounds x = improved ? v : x;
             # done: fix evaluation to have one function with one method; it might require two steps to evaluate the new one and the old one before comparing which is better
