@@ -9,48 +9,79 @@ Random.seed!(seed);
 
 check_bounds(lower_bound::T, upper_bound::T) where {T<:Number} = upper_bound < lower_bound && error("1D10T :: LOWER BOUND $(lower_bound) GREATER THAN THE UPPER BOUND $(upper_bound)\n");
 
-# the heuristic
+# the stats
 
-abstract type Stats end
+mutable struct PerformanceHistory
+    evaluations_counter::Int64;
+    best_solution_history::Matrix{<:Number};
+    best_score_history::Vector{Float64};
+    population_diversity_history::Vector{Float64};
 
-mutable struct GenLimit <: Stats
-    value::Int64;
-    limit::Int64;
-
-    function GenLimit(limit::Int64)
-        starting_generation::Int64 = 0;
-
-        new(starting_generation, limit);
+    function PerformanceHistory()
+        new(0::Int64,
+            Matrix{Float64}(),
+            Vector{Float64}(),
+            Vector{Float64}());
     end
 end
 
-function stopping_condition!(stats::GenLimit)
-    stop = stats.value < stats.limit;
-    stats.value += 1;
+function update_stats!(population::Matrix{<:Number},
+                       scores::Vector{Float64},
+                       evaluations::Int64,
+                       stats::PerformanceHistory)
+    function compute_diversity(population::Matrix{<:Number})
+        n::Int64 = length(population);
+        total_distance::Float64 = 0.0;
+        for i in 1:n, j in i+1:n
+            total_distance += sqrt(sum((population[i] - population[j]).^2));
+        end
+        return total_distance / (n * (n - 1) / 2);
+    end
+    
+    best_idx::Int64 = argmin(scores);
 
-    return stop;
+    stats.evaluations_counter += evaluations;
+    push!(stats.best_solution_history, population[best_idx]);
+    push!(stats.best_score_history, scores[best_idx]);
+    push!(stats.population_diversity_history, compute_diversity(population));
+
+    return stats;
 end
 
-function update_stats!(_, _)
-    return nothing;
+# the stopping conditions
+
+function max_iterations_stop(max_iterations::Int64)
+    return stats::PerformanceHistory -> length(stats.population_diversity_history) < max_iterations;
 end
 
-using Base.Iterators: flatten, partition
-using Base.Threads: nthreads, @spawn
+function fitness_threshold_stop(fitness_threshold::Float64)
+    return stats::PerformanceHistory -> fitness_threshold < stats.best_score_history[end];
+end
+
+function no_improvement_stop(max_no_improve::Int64)
+    return stats::PerformanceHistory -> max_no_improve < length(stats.best_score_history) && issorted(stats.best_score_history[end-max_no_improve+1:end]);
+end
+
+# the heuristic
 
 function differential_evolution_generic(objective::Function,
                                         constraint_function::Function,
-                                        bounds::Matrix{<:Number},
-                                        population_size
-                                        stopping_condition!::Function,
+                                        boundary_constraints::Matrix{<:Number},
+                                        individual::Vector{<:Number},
+                                        population_size::Int64,
+                                        stopping_condition::Function,
                                         selection::Function,
                                         crossover::Function,
                                         mutate::Function)
-    scores = evaluate.(population);
-    stats::Stats = Stats();
+    population::Matrix{<:Number}; # TODO: generate initial population
+    scores::Vector{Float64} = evaluate.(population);
+    stats::PerformanceHistory = PerformanceHistory();
 
     # TODO: check scores for stopping condition - keep the scores in stats? update stats function with multiple methods?
-    while stopping_condition!(stats)
+    while stopping_condition(stats)
+        new_generation::Matrix{<:Number} = similar(population);
+        new_scores::Vector{Float64} = similar(scores);
+
         @threads for (i, x) in enumerate(population)
             individuals = selection(population); # select
             d, u = crossover(x); # crossover
@@ -67,12 +98,14 @@ function differential_evolution_generic(objective::Function,
             @inbounds new_cohort_scores = improved ? f : cohort_scores[i];
             @inbounds new_cohort[i] = x;
         end
+
+        population = new_generation;
+        scores = new_scores;
+        update_stats!(population, scores, evaluations, stats);
     end
 
-        update_stats!(population, scores);
-    end
 
-    return population, evaluate.(population) # TODO: fix this to return population and eval like tuple or the best and eval tuple, or some n of the best with evals
+    return stats;
 end
 
 # function de_rand_1_bin(...)
