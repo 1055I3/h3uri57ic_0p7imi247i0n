@@ -14,23 +14,23 @@ check_bounds(lower_bound::T, upper_bound::T) where {T<:Number} = upper_bound < l
 
 mutable struct PerformanceHistory
     evaluations_counter::Int64;
-    best_solution_history::Matrix{<:Number};
+    best_solution_history::Vector{Vector{<:Number}};
     best_score_history::Vector{Float64};
     population_diversity_history::Vector{Float64};
 
     function PerformanceHistory()
         new(0::Int64,
-            Matrix{Float64}(),
+            Vector{Vector{Float64}}(),
             Vector{Float64}(),
             Vector{Float64}());
     end
 end
 
-function update_stats!(population::Matrix{<:Number},
+function update_stats!(population::Vector{Vector{<:Number}},
                        scores::Vector{Float64},
                        evaluations::Int64,
                        stats::PerformanceHistory)
-    function compute_diversity(population::Matrix{<:Number})
+    function compute_diversity(population::Vector{Vector{<:Number}})
         n::Int64 = length(population);
         total_distance::Float64 = 0.0;
         for i in 1:n, j in i+1:n
@@ -60,7 +60,7 @@ function fitness_threshold_stop(fitness_threshold::Float64)
 end
 
 function no_improvement_stop(max_no_improve::Int64)
-    return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(diff(stats.best_score_history[end-max_no_improve+1:end]) .< eps);
+    return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(abs.(diff(stats.best_score_history[end-max_no_improve+1:end])) .< eps);
 end
 
 # the heuristic
@@ -83,13 +83,13 @@ function differential_evolution_generic(objective::Function,
     new_chromosome(upper::T, lower::T) where {T<:AbstractFloat} = rand()*(upper-lower)+lower;
 
     # initialize the population and stats
-    population::Matrix{<:Number} = [[new_chromosome(upper, lower) for (upper, lower) in zip(upper_bounds, lower_bounds)] for _ in 1:population_size]
+    population::Vector{Vector{<:Number}} = [[new_chromosome(upper, lower) for (upper, lower) in zip(upper_bounds, lower_bounds)] for _ in 1:population_size]
     scores::Vector{Float64} = evaluate.(population);
     stats::PerformanceHistory = PerformanceHistory();
     update_stats!(population, scores, 1, stats);
 
     while stopping_condition(stats)
-        new_generation::Matrix{<:Number} = similar(population);
+        new_generation::Vector{Vector{<:Number}} = similar(population);
         new_scores::Vector{Float64} = similar(scores);
         evaluations::Int64 = 0;
 
@@ -97,7 +97,8 @@ function differential_evolution_generic(objective::Function,
             x = pupulation[i];
 
             # select vectors for mutation
-            individuals = selection(population);
+            individuals = selection(population,
+                                    stats.best_solution_history[end]);
 
             # get the crossover vector for an individual
             u = crossover(x);
@@ -155,9 +156,9 @@ function crossover_sa()
     end
 end
 
-# function de_rand_1_bin(...)
+# de_rand_1
 
-function selection_rand_1(population::Matrix{<:Variable})
+function selection_rand_1(population::Vector{Vector{<:Number}}, _)
     while true
         sample = rand(population, 3);
         allunique(sample) && return sample;
@@ -165,12 +166,12 @@ function selection_rand_1(population::Matrix{<:Variable})
 end
 
 function mutate_rand_1(ω::Float64,
-                       x::Vector{<:Variable},
-                       individuals::Tuple{Vector{<:Variable}},
+                       x::Vector{<:Number},
+                       individuals::Tuple{Vector{<:Number}},
                        u::Vector{Bool})
     a, b, c = individuals;
 
-    [(u[i]) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
+    return [(u[i]) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
 end
 
 function de_rand_1_max_iter(objective::Function,
@@ -189,7 +190,7 @@ function de_rand_1_max_iter(objective::Function,
                                           max_iterations_stop(max_iterations),
                                           selection_rand_1,
                                           x -> crossover(p, x),
-                                          (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
+                                          (x, is, u) -> mutate_rand_1(ω, x, is, u));
 end
 
 function de_rand_1_fitness_threshold(objective::Function,
@@ -208,7 +209,7 @@ function de_rand_1_fitness_threshold(objective::Function,
                                           fitness_threshold_stop(fitness_threshold),
                                           selection_rand_1,
                                           x -> crossover(p, x),
-                                          (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
+                                          (x, is, u) -> mutate_rand_1(ω, x, is, u));
 end
 
 function de_rand_1_no_improvement(objective::Function,
@@ -227,10 +228,49 @@ function de_rand_1_no_improvement(objective::Function,
                                           no_improvement_stop(no_imprevement_iters),
                                           selection_rand_1,
                                           x -> crossover(p, x),
-                                          (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
+                                          (x, is, u) -> mutate_rand_1(ω, x, is, u));
 end
 
-# TODO: rand_best_2
+# de_best_2
+
+function selection_best_2(population::Vector{Vector{<:Number}},
+                                   best::Vector{<:Number})
+    sample = [[best]; rand(population, 4)];
+    while !allunique(sample)
+        sample = [[best]; rand(population, 4)];
+    end
+    return sample;
+end
+
+function mutate_best_2(λ::Float64,
+                       ω::Float64,
+                       x::Vector{<:Number},
+                       individuals::Tuple{Vector{<:Number}},
+                       u::Vector{Bool})
+    best, a, b, c, d = individuals;
+
+    return [(u[i]) ? best[i] + λ*(a[i] - b[i]) + ω*(c[i] - d[i]) : x[i] for i in eachindex(x)];
+end
+
+function de_best_2_max_iter(objective::Function,
+                            constraint_functions::Vector{Function},
+                            upper_bounds::Vector{<:Number},
+                            lower_bounds::Vector{<:Number},
+                            population_size::Int64,
+                            max_iterations::Int64,
+                            p::Float64,
+                            λ::Float64,
+                            ω::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          max_iterations_stop(max_iterations),
+                                          selection_best_2,
+                                          x -> crossover(p, x),
+                                          (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
+end
 
 # TODO: SDE
 
