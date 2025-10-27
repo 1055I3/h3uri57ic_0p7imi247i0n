@@ -49,15 +49,15 @@ function update_stats!(population::Vector{Vector{<:Number}},
 end
 
 # the stopping conditions
-function max_iterations_stop(max_iterations::Int64)
+function max_iterations_stop(max_iterations::Int64) # TODO: make trapped variable local
     return stats::PerformanceHistory -> length(stats.population_diversity_history) ≤ max_iterations;
 end
 
-function fitness_threshold_stop(fitness_threshold::Float64)
+function fitness_threshold_stop(fitness_threshold::Float64) # TODO: make trapped variable local
     return stats::PerformanceHistory -> fitness_threshold < stats.best_score_history[end];
 end
 
-function no_improvement_stop(max_no_improve::Int64, no_improve_threshold::Float64)
+function no_improvement_stop(max_no_improve::Int64, no_improve_threshold::Float64) # TODO: make trapped variables local
     return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(abs.(diff(stats.best_score_history[end-max_no_improve+1:end])) .< no_improve_threshold);
 end
 
