@@ -91,7 +91,7 @@ function differential_evolution_generic(objective::Function,
         new_scores::Vector{Float64} = similar(scores);
         evaluations::Int64 = 0;
 
-        @threads for i in 1:population_size
+        for i in 1:population_size
             x = population[i];
 
             # select vectors for mutation
@@ -164,7 +164,7 @@ end
 
 function mutate_rand_1(ω::Float64,
                        x::Vector{<:Number},
-                       individuals::Tuple{Vector{<:Number}},
+                       individuals::Vector{Vector{<:Number}},
                        u::Vector{Bool})
     a, b, c = individuals;
 
@@ -244,7 +244,7 @@ end
 function mutate_best_2(λ::Float64,
                        ω::Float64,
                        x::Vector{<:Number},
-                       individuals::Tuple{Vector{<:Number}},
+                       individuals::Vector{Vector{<:Number}},
                        u::Vector{Bool})
     best, a, b, c, d = individuals;
 
@@ -386,47 +386,38 @@ end
 
 # benchmark suite
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
-sphere_constraint(X::Vector{<:AbstractFloat}) = 1;
 sphere_upper_bound::Vector{Float64} = [floatmax(Float64) for _ in 1:N];
 sphere_lower_bound::Vector{Float64} = [-floatmax(Float64) for _ in 1:N];
 
 rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^2, zip(X[1:end-1], X[2::end]));
-rosenbrock_constraint(X::Vector{<:AbstractFloat}) = 1;
 rosenbrock_upper_bound::Vector{Float64} = [floatmax(Float64) for _ in 1:N];
 rosenbrock_lower_bound::Vector{Float64} = [-floatmax(Float64) for _ in 1:N];
 
 step(X::Vector{<:AbstractFloat}) = sum(floor.(X));
-step_constraint(X::Vector{<:AbstractFloat}) = 1;
 step_upper_bound::Vector{Float64} = [5.12 for _ in 1:N];
 step_lower_bound::Vector{Float64} = [-5.12 for _ in 1:N];
 
 griewank(X::Vector{<:AbstractFloat}) = 1 + sum(X.^2)/4000 - prod(cos.(X./sqrt.(1:length(X))));
-griewank_constraint(X::Vector{<:AbstractFloat}) = 1;
 griewank_upper_bound::Vector{Float64} = [floatmax(Float64) for _ in 1:N];
 griewank_lower_bound::Vector{Float64} = [-floatmax(Float64) for _ in 1:N];
 
 styblinski_tang(X::Vector{<:AbstractFloat}) = sum(x -> x^4-16*x^2+5*x, X)/2;
-styblinski_tang_constraint(X::Vector{<:AbstractFloat}) = 1;
 styblinski_tang_upper_bound::Vector{Float64} = [5 for _ in 1:N];
 styblinski_tang_lower_bound::Vector{Float64} = [-5 for _ in 1:N];
 
 sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao konstante vam funkcije
-sheckel_constraint(X::Vector{<:AbstractFloat}) = 1;
 sheckel_upper_bound::Vector{Float64} = [floatmax(Float64) for _ in 1:N];
 sheckel_lower_bound::Vector{Float64} = [-floatmax(Float64) for _ in 1:N];
 
 rastrigin(X::Vector{<:AbstractFloat}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
-rastrigin_constraint(X::Vector{<:AbstractFloat}) = 1;
 rastrigin_upper_bound::Vector{Float64} = [5.12 for _ in 1:N];
 rastrigin_lower_bound::Vector{Float64} = [-5.12 for _ in 1:N];
 
 ackley(X::Vector{<:AbstractFloat}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
-ackley_constraint(X::Vector{<:AbstractFloat}) = 1;
 ackley_upper_bound::Vector{Float64} = [65.536 for _ in 1:N];
 ackley_lower_bound::Vector{Float64} = [-65.536 for _ in 1:N];
 
 rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
-rotated_elipsoid_constraint(_) = 1;
 rotated_elipsoid_upper_bound::Vector{Float64} = [32.768 for _ in 1:N];
 rotated_elipsoid_lower_bound::Vector{Float64} = [-32.768 for _ in 1:N];
 
@@ -447,5 +438,15 @@ keane_lower_bound::Vector{Float64} = [0 for _ in 1:N];
 
 # end
 
-result = de_rand_1_max_iter(sphere, [sphere_constraint], sphere_upper_bound, sphere_lower_bound, 20*N, 2^32, 0.1, 0.4);
+sphere_rand_1_result = de_rand_1_max_iter(sphere, [x -> 1], sphere_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
+rosenbrock_rand_1_result  = de_rand_1_max_iter(rosenbrock, [x -> 1], rosenbrock_upper_bound, rosenbrock_lower_bound, 20*N, 2^16, 0.1, 0.4);
+step_result_rand_1_result = de_rand_1_max_iter(step, [x -> 1], step_upper_bound, step_lower_bound, 20*N, 2^16, 0.1, 0.4);
+griewank_rand_1_result_result = de_rand_1_max_iter(griewank, [x -> 1], griewank_upper_bound, griewank_lower_bound, 20*N, 2^16, 0.1, 0.4);
+styblinski_rand_1_tang_result = de_rand_1_max_iter(styblinski, [x -> 1], styblinski_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
+sheckel_rand_1_result = de_rand_1_max_iter(sheckel, [x -> 1], sheckel_upper_bound, sheckel_lower_bound, 20*N, 2^16, 0.1, 0.4);
+rastrigin_rand_1_result = de_rand_1_max_iter(rastrigin, [x -> 1], rastrigin_upper_bound, rastrigin_lower_bound, 20*N, 2^16, 0.1, 0.4);
+ackley_rand_1_result = de_rand_1_max_iter(ackley, [x -> 1], ackley_upper_bound, ackley_lower_bound, 20*N, 2^16, 0.1, 0.4);
+rotated_elipsoid_rand_1_result = de_rand_1_max_iter(rotated_elipsoid, [x -> 1], rotated_elipsoid_upper_bound, rotated_elipsoid_lower_bound, 20*N, 2^16, 0.1, 0.4);
+keane_bump_rand_1_result = de_rand_1_max_iter(keane_bump, [keane_constraint_1, keane_constraint_2], sphere_upper_bound, sphere_lower_bound, 20*N, 2^16, 0.1, 0.4);
+
 println(result.best_score_history[end], result.population_diversity_history[end]);
