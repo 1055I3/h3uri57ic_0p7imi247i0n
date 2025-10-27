@@ -59,8 +59,8 @@ function fitness_threshold_stop(fitness_threshold::Float64)
     return stats::PerformanceHistory -> fitness_threshold < stats.best_score_history[end];
 end
 
-function no_improvement_stop(max_no_improve::Int64)
-    return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(abs.(diff(stats.best_score_history[end-max_no_improve+1:end])) .< eps);
+function no_improvement_stop(max_no_improve::Int64, no_improve_threshold::Float64)
+    return stats::PerformanceHistory -> max_no_improve ≥ length(stats.best_score_history) || !all(abs.(diff(stats.best_score_history[end-max_no_improve+1:end])) .< no_improve_threshold);
 end
 
 # the heuristic
@@ -218,6 +218,7 @@ function de_rand_1_no_improvement(objective::Function,
                                   lower_bounds::Vector{<:Number},
                                   population_size::Int64,
                                   no_imprevement_iters::Int64,
+                                  no_improvement_threshold::Float64,
                                   p::Float64,
                                   ω::Float64)
     return differential_evolution_generic(objective,
@@ -225,7 +226,8 @@ function de_rand_1_no_improvement(objective::Function,
                                           upper_bounds,
                                           lower_bounds,
                                           population_size,
-                                          no_improvement_stop(no_imprevement_iters),
+                                          no_improvement_stop(no_imprevement_iters,
+                                                              no_improvement_threshold),
                                           selection_rand_1,
                                           x -> crossover(p, x),
                                           (x, is, u) -> mutate_rand_1(ω, x, is, u));
@@ -234,7 +236,7 @@ end
 # de_best_2
 
 function selection_best_2(population::Vector{Vector{<:Number}},
-                                   best::Vector{<:Number})
+                          best::Vector{<:Number})
     sample = [[best]; rand(population, 4)];
     while !allunique(sample)
         sample = [[best]; rand(population, 4)];
@@ -287,6 +289,28 @@ function de_best_2_fitness_threshold(objective::Function,
                                           lower_bounds,
                                           population_size,
                                           fitness_threshold_stop(fitness_threshold),
+                                          selection_best_2,
+                                          x -> crossover(p, x),
+                                          (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
+end
+
+function de_best_2_no_improvement(objective::Function,
+                                  constraint_functions::Vector{Function},
+                                  upper_bounds::Vector{<:Number},
+                                  lower_bounds::Vector{<:Number},
+                                  population_size::Int64,
+                                  no_imprevement_iters::Int64,
+                                  no_improvement_threshold::Float64,
+                                  p::Float64,
+                                  λ::Float64,
+                                  ω::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          no_improvement_stop(no_imprevement_iters,
+                                                              no_improvement_threshold),
                                           selection_best_2,
                                           x -> crossover(p, x),
                                           (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
