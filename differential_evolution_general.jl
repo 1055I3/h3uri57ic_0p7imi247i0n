@@ -130,7 +130,7 @@ function differential_evolution_generic(objective::Function,
     return stats;
 end
 
-# function de_rand_1_bin(...)
+# consider bitrand for crossover
 function crossover(p::Float64,
                    individual::Vector{<:Number})
     d = rand(eachindex(individual));
@@ -139,24 +139,49 @@ function crossover(p::Float64,
     return d, u;
 end
 
-# consider bitrand for crossover
+# TODO: crossover_sa
 
-function selection(population::Matrix{<:Variable})
+# function de_rand_1_bin(...)
+
+function selection_rand_1(population::Matrix{<:Variable})
     while true
         sample = rand(population, 3);
         allunique(sample) && return sample;
     end
 end
 
-function mutate(ω::Float64,
-                x::Vector{<:Variable},
-                individuals::Tuple{Vector{<:Variable}},
-                d::Int64,
-                u::Vector{Bool})
+function mutate_rand_1(ω::Float64,
+                       x::Vector{<:Variable},
+                       individuals::Tuple{Vector{<:Variable}},
+                       d::Int64,
+                       u::Vector{Bool})
     a, b, c = individuals;
 
     [(u[i] || i == d) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
 end
+
+function de_rand_1_max_iter(objective::Function,
+                            constraint_functions::Vector{Function},
+                            upper_bounds::Vector{<:Number},
+                            lower_bounds::Vector{<:Number},
+                            population_size::Int64,
+                            max_iterations::Int64,
+                            p::Float64,
+                            ω::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          max_iterations_stop(max_iterations),
+                                          selection_rand_1,
+                                          x -> crossover(p, x),
+                                          (x, is, d, u) -> mutate_rand_1(ω, x, is, d, u));
+end
+
+# TODO: rand_best_2
+
+# TODO: SDE
 
 # benchmark suite
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
