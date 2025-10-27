@@ -100,7 +100,7 @@ function differential_evolution_generic(objective::Function,
             individuals = selection(population);
 
             # get the crossover vector for an individual
-            d, u = crossover(x);
+            u = crossover(x);
 
             # generate a new individual
             v = mutate(x, individuals, d, u);
@@ -135,11 +135,25 @@ function crossover(p::Float64,
                    individual::Vector{<:Number})
     d = rand(eachindex(individual));
     u = [p < a for a in rand(Float64, length(individual))];
+    u[d] = true;
 
-    return d, u;
+    return u;
 end
 
-# TODO: crossover_sa
+# crossover_sa
+function crossover_sa()
+    rnd = Normal(0.5, 0.15);
+
+    return (individual::Vector{<:Number}) -> begin
+        d = rand(eachindex(individual));
+        pr = rand(rnd, length(individual));
+        r = rand(Float64, length(individual));
+        u = r .< pr;
+        u[d] = true;
+
+        return u;
+    end
+end
 
 # function de_rand_1_bin(...)
 
@@ -153,11 +167,10 @@ end
 function mutate_rand_1(ω::Float64,
                        x::Vector{<:Variable},
                        individuals::Tuple{Vector{<:Variable}},
-                       d::Int64,
                        u::Vector{Bool})
     a, b, c = individuals;
 
-    [(u[i] || i == d) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
+    [(u[i]) ? a[i] + ω*(b[i] - c[i]) : x[i] for i in eachindex(x)];
 end
 
 function de_rand_1_max_iter(objective::Function,
@@ -227,7 +240,7 @@ rosenbrock(X::Vector{<:AbstractFloat}) = sum((x1, x2) -> 100*(x1^2-x2)^2+(1-x1)^
 step(X::Vector{<:AbstractFloat}) = sum(floor.(X));
 griewank(X::Vector{<:AbstractFloat}) = 1 + sum(X.^2)/4000 - prod(cos.(X./sqrt.(1:length(X))));
 styblinski_tang(X::Vector{<:AbstractFloat}) = sum(x -> x^4-16*x^2+5*x, X)/2;
-sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao globalne konstante
+sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao konstante vam funkcije
 rastrigin(X::Vector{<:AbstractFloat}) = sum(x -> x^2-10*cos(2*π*x)+10, X);
 ackley(X::Vector{<:AbstractFloat}) = -20*exp(-0.2*sqrt(mean(X.^2)))-exp(mean(cos.(2π.*X)))+20+ℯ;
 rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
