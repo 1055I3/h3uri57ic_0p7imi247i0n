@@ -1,17 +1,14 @@
-# define variable types
-
 using Random
 using Distributions
+using Iterators
 using Optim
 
+# constants
 const eps::Float64 = 1.0e-12;
 const seed::Int64 = 42;
 Random.seed!(seed);
 
-check_bounds(lower_bound::T, upper_bound::T) where {T<:Number} = upper_bound < lower_bound && error("1D10T :: LOWER BOUND $(lower_bound) GREATER THAN THE UPPER BOUND $(upper_bound)\n");
-
 # the stats
-
 mutable struct PerformanceHistory
     evaluations_counter::Int64;
     best_solution_history::Vector{Vector{<:Number}};
@@ -50,7 +47,6 @@ function update_stats!(population::Vector{Vector{<:Number}},
 end
 
 # the stopping conditions
-
 function max_iterations_stop(max_iterations::Int64)
     return stats::PerformanceHistory -> length(stats.population_diversity_history) ≤ max_iterations;
 end
@@ -64,7 +60,6 @@ function no_improvement_stop(max_no_improve::Int64, no_improve_threshold::Float6
 end
 
 # the heuristic
-
 function differential_evolution_generic(objective::Function,
                                         constraint_functions::Vector{Function},
                                         upper_bounds::Vector{<:Number},
@@ -131,7 +126,7 @@ function differential_evolution_generic(objective::Function,
     return stats;
 end
 
-# consider bitrand for crossover
+# crossover
 function crossover(p::Float64,
                    individual::Vector{<:Number})
     d = rand(eachindex(individual));
@@ -141,7 +136,6 @@ function crossover(p::Float64,
     return u;
 end
 
-# crossover_sa
 function crossover_sa()
     rnd = Normal(0.5, 0.15);
 
@@ -316,7 +310,40 @@ function de_best_2_no_improvement(objective::Function,
                                           (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
 end
 
-# TODO: SDE
+# SDE
+function mutate_sde_rand_1(dimension::Int64) 
+    ω = rand(Normal(0.5, 0.15), dimension);
+    rnd = Normal(0, 0.5);
+
+    return (x, individuals, u) -> begin
+        evolve_omega() = begin
+            ω1, ω2, ω3 = collect(Flatten(selection_rand_1([[o] for o in ω], _)));
+            return ω1 + rand(rnd)*(ω2 - ω3);
+        end
+        ω = [evolve_omega() for _ in ω];
+
+        a, b, c = individuals;
+
+        return [(u[i]) ? a[i] + ω[i]*(b[i] - c[i]) : x[i] for i in eachindex(x)];
+    end
+end
+
+function sde_rand_1_max_iter(objective::Function,
+                             constraint_functions::Vector{Function},
+                             upper_bounds::Vector{<:Number},
+                             lower_bounds::Vector{<:Number},
+                             population_size::Int64,
+                             max_iterations::Int64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          max_iterations(max_iterations),
+                                          selection_rand_1,
+                                          crossover_sa(),
+                                          mutate_sde_rand_1(length(upper_bounds)));
+end
 
 # benchmark suite
 sphere(X::Vector{<:AbstractFloat}) = sum(X.^2);
