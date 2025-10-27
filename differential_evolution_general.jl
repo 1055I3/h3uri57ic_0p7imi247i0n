@@ -191,7 +191,7 @@ function de_rand_1_max_iter(objective::Function,
 end
 
 function de_rand_1_fitness_threshold(objective::Function,
-                                     constraint_functions::Vector{Function},
+                                     constraint_functions::Vector{<:Function},
                                      upper_bounds::Vector{<:Number},
                                      lower_bounds::Vector{<:Number},
                                      population_size::Int64,
@@ -210,7 +210,7 @@ function de_rand_1_fitness_threshold(objective::Function,
 end
 
 function de_rand_1_no_improvement(objective::Function,
-                                  constraint_functions::Vector{Function},
+                                  constraint_functions::Vector{<:Function},
                                   upper_bounds::Vector{<:Number},
                                   lower_bounds::Vector{<:Number},
                                   population_size::Int64,
@@ -252,7 +252,7 @@ function mutate_best_2(λ::Float64,
 end
 
 function de_best_2_max_iter(objective::Function,
-                            constraint_functions::Vector{Function},
+                            constraint_functions::Vector{<:Function},
                             upper_bounds::Vector{<:Number},
                             lower_bounds::Vector{<:Number},
                             population_size::Int64,
@@ -272,7 +272,7 @@ function de_best_2_max_iter(objective::Function,
 end
 
 function de_best_2_fitness_threshold(objective::Function,
-                                     constraint_functions::Vector{Function},
+                                     constraint_functions::Vector{<:Function},
                                      upper_bounds::Vector{<:Number},
                                      lower_bounds::Vector{<:Number},
                                      population_size::Int64,
@@ -292,7 +292,7 @@ function de_best_2_fitness_threshold(objective::Function,
 end
 
 function de_best_2_no_improvement(objective::Function,
-                                  constraint_functions::Vector{Function},
+                                  constraint_functions::Vector{<:Function},
                                   upper_bounds::Vector{<:Number},
                                   lower_bounds::Vector{<:Number},
                                   population_size::Int64,
@@ -332,7 +332,7 @@ function mutate_sde_rand_1(dimension::Int64)
 end
 
 function sde_rand_1_max_iter(objective::Function,
-                             constraint_functions::Vector{Function},
+                             constraint_functions::Vector{<:Function},
                              upper_bounds::Vector{<:Number},
                              lower_bounds::Vector{<:Number},
                              population_size::Int64,
@@ -349,7 +349,7 @@ function sde_rand_1_max_iter(objective::Function,
 end
 
 function sde_rand_1_fitness_threshold(objective::Function,
-                             constraint_functions::Vector{Function},
+                             constraint_functions::Vector{<:Function},
                              upper_bounds::Vector{<:Number},
                              lower_bounds::Vector{<:Number},
                              population_size::Int64,
@@ -366,7 +366,7 @@ function sde_rand_1_fitness_threshold(objective::Function,
 end
 
 function sde_rand_1_no_improvement(objective::Function,
-                                   constraint_functions::Vector{Function},
+                                   constraint_functions::Vector{<:Function},
                                    upper_bounds::Vector{<:Number},
                                    lower_bounds::Vector{<:Number},
                                    population_size::Int64,
@@ -534,6 +534,9 @@ rotated_particle_swarm_result = optimize(rotated_elipsoid, [0 for  _ in 1:N], Pa
 
 # visualize
 
-println(result.best_score_history[end], result.population_diversity_history[end]);
+println(sphere_rand_1_result.best_score_history[end], sphere_rand_1_result.population_diversity_history[end]);
+println(sphere_best_2_result.best_score_history[end], sphere_best_2_result.population_diversity_history[end]);
+println(sphere_sde_result.best_score_history[end], sphere_sde_result.population_diversity_history[end]);
+println(sphere_particle_swarm_result);
 
 # end
