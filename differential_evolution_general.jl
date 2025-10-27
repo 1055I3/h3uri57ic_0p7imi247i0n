@@ -272,6 +272,26 @@ function de_best_2_max_iter(objective::Function,
                                           (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
 end
 
+function de_best_2_fitness_threshold(objective::Function,
+                                     constraint_functions::Vector{Function},
+                                     upper_bounds::Vector{<:Number},
+                                     lower_bounds::Vector{<:Number},
+                                     population_size::Int64,
+                                     fitness_threshold::Float64,
+                                     p::Float64,
+                                     λ::Float64,
+                                     ω::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          fitness_threshold_stop(fitness_threshold),
+                                          selection_best_2,
+                                          x -> crossover(p, x),
+                                          (x, is, u) -> mutate_best_2(λ, ω, x, is, u));
+end
+
 # TODO: SDE
 
 # benchmark suite
