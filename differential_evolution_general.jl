@@ -339,7 +339,24 @@ function sde_rand_1_max_iter(objective::Function,
                                           upper_bounds,
                                           lower_bounds,
                                           population_size,
-                                          max_iterations(max_iterations),
+                                          max_iterations_stop(max_iterations),
+                                          selection_rand_1,
+                                          crossover_sa(),
+                                          mutate_sde_rand_1(length(upper_bounds)));
+end
+
+function sde_rand_1_fitness_threshold(objective::Function,
+                             constraint_functions::Vector{Function},
+                             upper_bounds::Vector{<:Number},
+                             lower_bounds::Vector{<:Number},
+                             population_size::Int64,
+                             fitness_threshold::Float64)
+    return differential_evolution_generic(objective,
+                                          constraint_functions,
+                                          upper_bounds,
+                                          lower_bounds,
+                                          population_size,
+                                          fitness_threshold_stop(fitness_threshold),
                                           selection_rand_1,
                                           crossover_sa(),
                                           mutate_sde_rand_1(length(upper_bounds)));
