@@ -405,7 +405,9 @@ styblinski_tang(X::Vector{<:AbstractFloat}) = sum(x -> x^4-16*x^2+5*x, X)/2;
 styblinski_tang_upper_bound::Vector{Float64} = [5 for _ in 1:N];
 styblinski_tang_lower_bound::Vector{Float64} = [-5 for _ in 1:N];
 
-sheckel(X::Vector{<:AbstractFloat}, A=rand(length(X),32), C=rand(32)) = -sum(1 ./ (sum((X' .- A).^2, dims=1) .+ C)); # TODO: definisati A i C kao konstante vam funkcije
+const A_SHECKEL = rand(N, 32);
+const C_SHECKEL = rand(32);
+sheckel(X::Vector{<:AbstractFloat}) = -sum(1 ./ (sum((X' .- A_SHECKEL).^2, dims=1) .+ C_SHECKEL));
 sheckel_upper_bound::Vector{Float64} = [floatmax(Float64) for _ in 1:N];
 sheckel_lower_bound::Vector{Float64} = [-floatmax(Float64) for _ in 1:N];
 
@@ -421,7 +423,7 @@ rotated_elipsoid(X::Vector{<:AbstractFloat}) = sum((1:length(X)) .* X.^2);
 rotated_elipsoid_upper_bound::Vector{Float64} = [32.768 for _ in 1:N];
 rotated_elipsoid_lower_bound::Vector{Float64} = [-32.768 for _ in 1:N];
 
-keane_bump(X::Vector{<:AbstractFloat}) = -abs((sum(cos.(X).^4) - 2*prod(cos.(X).^2)) / sqrt(sum(i * X[i]^2 for i in 1:length(X))));
+keane_bump(X::Vector{<:AbstractFloat}) = -abs((sum(cos.(X).^4) - 2*prod(cos.(X).^2)) / (sqrt(sum(i * X[i]^2 for i in 1:length(X))))+eps);
 keane_constraint_1(X::Vector{<:AbstractFloat}) = begin
     c1::Float64 = 0.75 - prod(X);
     return c1 < 0 ? 1 : c1*75;
