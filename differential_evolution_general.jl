@@ -30,7 +30,7 @@ function update_stats!(population::Vector{Vector{<:Number}},
                        evaluations::Int64,
                        stats::PerformanceHistory)
     function compute_diversity(population::Vector{Vector{<:Number}})
-        n::Int64 = length(population);
+        n::Int64 = length(population); # TODO: fix the indices
         total_distance::Float64 = 0.0;
         for i in 1:n, j in i+1:n
             total_distance += sqrt(sum((population[i] - population[j]).^2));
