@@ -4,6 +4,8 @@ Kochenderfer, Mykel J., and Tim A. Wheeler. Algorithms for Optimization. MIT Pre
 
 Lampinen, Jouni, and Ivan Zelinka. "Mixed Variable Non-Linear Optimization by Differential Evolution." In Proceedings of Nostradamus'99, 2nd International Prediction Conference, edited by Ivan Zelinka, 45-55. Zlin, Czech Republic: Technical University of Brno, Faculty of Technology Zlin, Department of Automatic Control, 1999. ISBN 80-214-1424-3.
 
+Storn, Rainer, and Kenneth Price. "Differential Evolution—A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." Journal of Global Optimization 11, no. 4 (1997): 341–359.
+
 Storn, Rainer, and Kenneth Price. "Differential Evolution - A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." Journal of Global Optimization 11, no. 4 (1997): 341-359. Kluwer Academic Publishers.
 
 Price, Kenneth V., Rainer M. Storn, and Jouni A. Lampinen. Differential Evolution: A Practical Approach to Global Optimization. Natural Computing Series. Springer, 2005.
