@@ -1,5 +1,7 @@
 Feoktistov, Vitaliy. Differential Evolution: In Search of Solutions. Springer, 2006.
 
+Kochenderfer, Mykel J., and Tim A. Wheeler. Algorithms for Optimization. MIT Press, 2019.
+
 Lampinen, Jouni, and Ivan Zelinka. "Mixed Variable Non-Linear Optimization by Differential Evolution." In Proceedings of Nostradamus'99, 2nd International Prediction Conference, edited by Ivan Zelinka, 45-55. Zlin, Czech Republic: Technical University of Brno, Faculty of Technology Zlin, Department of Automatic Control, 1999. ISBN 80-214-1424-3.
 
 Storn, Rainer, and Kenneth Price. "Differential Evolution - A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." Journal of Global Optimization 11, no. 4 (1997): 341-359. Kluwer Academic Publishers.
