@@ -1,0 +1,6 @@
+Last Name, First Name. Title of Book. Publisher, Year of Publication
+Feoktistov, Vitaliy. Differential Evolution: In Search of Solutions. Springer, 2006.
+
+Jouni Lampinen – Ivan Zelinka (1999). Mixed Variable Non-Linear Optimization by Differen-tial Evolution. In: Zelinka, Ivan (ed.) (1999). Proceedings of Nostradamus'99, 2nd International Predicti-on Conference, October 7.–8. 1999, Zlin, Czech Republic. Technical University of Brno, Faculty ofTechnology Zlin, Department of Automatic Control, Zlin (Czech Republic), pp. 45–55. ISBN 80-214-1424-3.
+RAINER STORN, KENNETH PRICE, Differential Evolution – A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces, Journal of Global Optimization, Kluwer Academic Publishers, 1997
+Kenneth V. Price Rainer M. Storn Jouni A. Lampinen Differential Evolution A Practical Approach to Global Optimization, Natural Computing Series
