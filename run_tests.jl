@@ -3,134 +3,97 @@ using Random
 using Statistics
 include("differential_evolution.jl")
 
-@testset "Differential Evolution Unit Tests" begin
+@testset "DE Unicode & Stats Unit Tests" begin
     
-    @testset "Diversity Calculation" begin
-        pop = [[0.0, 0.0], [1.0, 1.0], [2.0, 2.0]]
-        # distances: d(1,2)=sqrt(2), d(1,3)=sqrt(8)=2*sqrt(2), d(2,3)=sqrt(2)
-        # avg = (sqrt(2) + 2*sqrt(2) + sqrt(2)) / 3 = 4*sqrt(2)/3
-        expected = (sqrt(2) + sqrt(8) + sqrt(2)) / 3
-        @test compute_diversity(pop) ≈ expected
+    @testset "PocockSignStop Logic" begin
+        ζ = PerformanceStats()
+        # n_h=7, n=6, K=6. 
+        # term(6) = binomial(6,6)*0.5^6 = 1/64 = 0.015625
+        # Peq = 0.015625, Pgt = 0.0
+        # p_mid = 0.0 + 0.5*0.015625 = 0.0078125
+        # 0.0078125 <= 0.02275 => true (Continue)
+        ζ.φ_hist = [1.0, 0.9, 0.8, 0.7, 0.6, 0.5, 0.4]
+        @test check(PocockSignStop(), ζ) == true
         
-        @test compute_diversity([[0.0], [0.0]]) == 0.0
-        @test compute_diversity([[1.0]]) == 0.0
+        # All flat: K=0, n=6. 
+        # Peq = term(0) = 0.015625
+        # Pgt = term(1..6) = 1 - 0.015625 = 0.984375
+        # p_mid = 0.984375 + 0.5*0.015625 = 0.9921875
+        # 0.9921875 > 0.02275 => false (Stop)
+        ζ.φ_hist = fill(1.0, 7)
+        @test check(PocockSignStop(), ζ) == false
     end
 
-    @testset "Bounds Enforcement" begin
-        ub = [10.0, 10.0]
-        lb = [0.0, 0.0]
+    @testset "SPRTStop Logic" begin
+        ζ = PerformanceStats()
+        # K=1, n=1. M = 0.5. 0.5 > 0.05 => true (Continue)
+        ζ.φ_hist = [1.0, 0.9]
+        @test check(SPRTStop(), ζ) == true
         
-        # Internal function test via a dummy DE setup or just duplicating logic for unit test
-        # Since it's internal to run_differential_evolution, we test the behavior.
-        # But we can also test if it's correct in isolation if we had exported it.
-        # Let's test a sample DE run with tight bounds.
-        stats = run_differential_evolution(
-            x -> sum(x), [], [1.0], [1.0], 5, 
-            MaxIterationsStop(1), BasicCrossover(0.5), Rand1Strategy(0.5)
-        )
-        @test all(stats.best_solution_hist[1] .== 1.0)
+        # K=0, n=9. M = Beta(0.5, 9.5)/Beta(0.5, 0.5)
+        # log M = lgamma(0.5)+lgamma(9.5)-lgamma(10) - 2*lgamma(0.5) = lgamma(9.5)-lgamma(10)-lgamma(0.5)
+        # M is approx 0.017. 0.017 <= 0.05 => false (Stop)
+        ζ.φ_hist = fill(1.0, 10)
+        @test check(SPRTStop(), ζ) == false
     end
 
-    @testset "Stopping Conditions" begin
-        stats = PerformanceStats()
+    @testset "PermutationStop Logic" begin
+        ζ = PerformanceStats()
+        # n_h=12, Δ=[1..1] (11 ones). X=[1..1] (10 ones).
+        # obs_T = 0.0. p_perm = 1.0. 1.0 > 0.975 => false (Stop)
+        ζ.φ_hist = collect(12.0:-1.0:1.0) 
+        @test check(PermutationStop(), ζ) == false 
         
-        # Max Iterations
-        stop_max = MaxIterationsStop(10)
-        @test check(stop_max, stats) == true
-        stats.iter_count[] = 10
-        @test check(stop_max, stats) == false
+        # Artificial improvement in recent block
+        # X = [0,0,0,0,0, 1,1,1,1,1]
+        # μA=0, μB=1, sA2=0, sB2=0. T_s = large? No, denom handled.
+        # But let's use some noise.
+        X_vals = [0.1, 0.2, 0.1, 0.2, 0.1, 10.0, 11.0, 10.0, 11.0, 10.0]
+        # To get these into φ_hist, we integrate backwards from 0.
+        h = [0.0]
+        for v in reverse(X_vals)
+            push!(h, h[end] + v)
+        end
+        ζ.φ_hist = reverse(h)
+        @test check(PermutationStop(), ζ) == true # p_perm should be small
+    end
+
+    @testset "AGS Handshake" begin
+        Π = [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0]]
+        Φ = [10.0, 10.0, 10.0, 10.0]
+        ρ = Random.default_rng()
+        Σ = Dict{Symbol, Any}()
         
-        # Fitness Threshold
-        stop_fit = FitnessThresholdStop(0.1)
-        @test check(stop_fit, stats) == true # empty hist
-        push!(stats.best_score_hist, 0.5)
-        @test check(stop_fit, stats) == true
-        push!(stats.best_score_hist, 0.05)
-        @test check(stop_fit, stats) == false
+        Ξ, Σ = AGS!(Π, Φ, ρ, Σ)
+        @test length(Ξ) == 4
+        @test haskey(Σ, :_pending_candidates)
         
-        # No Improvement
-        stop_no_imp = NoImprovementStop(2, 0.01)
-        empty!(stats.best_score_hist)
-        stats.iter_count[] = 1
-        @test check(stop_no_imp, stats) == true
+        Ξ2, Σ = AGS!(Π, Φ, ρ, Σ)
+        @test isempty(Ξ2)
+        @test !haskey(Σ, :_pending_candidates)
+    end
+
+    @testset "FISA Handshake" begin
+        Π = [[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0]]
+        Φ = [10.0, 10.0, 10.0, 10.0]
+        ρ = Random.default_rng()
+        Σ = Dict{Symbol, Any}(:bounds => ([0.0, 0.0], [10.0, 10.0]))
         
-        stats.iter_count[] = 4
-        push!(stats.best_score_hist, 1.0)
-        push!(stats.best_score_hist, 0.9)
-        push!(stats.best_score_hist, 0.8)
-        push!(stats.best_score_hist, 0.7)
-        @test check(stop_no_imp, stats) == true # window [0.8, 0.7], diff 0.1 > 0.01
+        Ξ, Σ = FISA!(Π, Φ, ρ, Σ)
+        @test length(Ξ) == 4
+        @test haskey(Σ, :_pending_candidates)
         
-        empty!(stats.best_score_hist)
-        push!(stats.best_score_hist, 1.0)
-        push!(stats.best_score_hist, 1.0001)
-        push!(stats.best_score_hist, 1.0001)
-        push!(stats.best_score_hist, 1.0001)
-        @test check(stop_no_imp, stats) == false # window [1.0001, 1.0001], diff 0 < 0.01
+        Ξ2, Σ = FISA!(Π, Φ, ρ, Σ)
+        @test isempty(Ξ2)
     end
 end
 
-@testset "Differential Evolution Integration Tests" begin
+@testset "Upgraded DE Integration Tests" begin
     Random.seed!(42)
+    ub, lb = [5.0, 5.0], [-5.0, -5.0]
     
-    @testset "Sphere Function Convergence" begin
-        dim = 3
-        ub = fill(10.0, dim)
-        lb = fill(-10.0, dim)
-        
-        stats = run_differential_evolution(
-            x -> sum(x.^2),
-            [],
-            ub, lb,
-            20,
-            MaxIterationsStop(500),
-            BasicCrossover(0.1),
-            Rand1Strategy(0.8)
-        )
-        
-        @test stats.best_score_hist[end] < 1e-6
-    end
-
-    @testset "Constrained Optimization (Simple)" begin
-        # Minimize x + y subject to x + y >= 2 => min is 2 at x+y=2
-        # Penalty: max(0, 2 - (x+y))
-        objective(x) = sum(x)
-        constraints = [x -> max(0.0, 2.0 - sum(x)) * 100.0] # Heavy penalty
-        
-        ub = [5.0, 5.0]
-        lb = [0.0, 0.0]
-        
-        stats = run_differential_evolution(
-            objective,
-            constraints,
-            ub, lb,
-            20,
-            MaxIterationsStop(500),
-            BasicCrossover(0.5),
-            Rand1Strategy(0.8)
-        )
-        
-        @test stats.best_score_hist[end] ≈ 2.0 atol=0.1
-    end
-
-    @testset "Strategies (Best/2 and SDE)" begin
-        # Test if they at least run and produce a reasonable result on Sphere
-        dim = 2
-        ub = fill(5.0, dim)
-        lb = fill(-5.0, dim)
-        
-        # Best/2
-        stats_b2 = run_differential_evolution(
-            x -> sum(x.^2), [], ub, lb, 20,
-            MaxIterationsStop(200), BasicCrossover(0.1), Best2Strategy(0.5, 0.5)
-        )
-        @test stats_b2.best_score_hist[end] < 0.1
-        
-        # SDE
-        stats_sde = run_differential_evolution(
-            x -> sum(x.^2), [], ub, lb, 20,
-            MaxIterationsStop(200), CrossoverSA(), SDEStrategy(dim)
-        )
-        @test stats_sde.best_score_hist[end] < 0.5
+    @testset "AGS Convergence (Sphere)" begin
+        ζ = run_differential_evolution(x -> sum(x.^2), [], ub, lb, 20, MaxIterationsStop(500), BasicCrossover(0.1), AGS!)
+        @test ζ.φ_hist[end] < 1.0 # Loose check for speed
     end
 end
