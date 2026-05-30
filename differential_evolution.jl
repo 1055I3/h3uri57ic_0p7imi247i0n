@@ -114,7 +114,7 @@ function run_differential_evolution(
         return obj + penalty
     end
 
-    # Proper inner function for mutant generation as requested
+    # Proper inner function for mutant generation
     function generate_mutant(i, current_pop, current_scores, current_best)
         x = current_pop[i]
         
@@ -132,21 +132,52 @@ function run_differential_evolution(
         v = copy(x)
         
         if sel_mut_strat isa Rand1Strategy
-            a, b, c = [current_pop[idx] for idx in rand(indices, 3)]
+            # Ensure unique samples for mutation
+            sample_indices = zeros(Int, 3)
+            let n = 0
+                while n < 3
+                    idx = rand(indices)
+                    if !(idx in @view sample_indices[1:n])
+                        n += 1
+                        sample_indices[n] = idx
+                    end
+                end
+            end
+            a, b, c = [current_pop[idx] for idx in sample_indices]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = a[k] + sel_mut_strat.omega * (b[k] - c[k])
                 end
             end
         elseif sel_mut_strat isa Best2Strategy
-            a, b, c, d = [current_pop[idx] for idx in rand(indices, 4)]
+            sample_indices = zeros(Int, 4)
+            let n = 0
+                while n < 4
+                    idx = rand(indices)
+                    if !(idx in @view sample_indices[1:n])
+                        n += 1
+                        sample_indices[n] = idx
+                    end
+                end
+            end
+            a, b, c, d = [current_pop[idx] for idx in sample_indices]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = current_best[k] + sel_mut_strat.nu * (a[k] - b[k]) + sel_mut_strat.omega * (c[k] - d[k])
                 end
             end
         elseif sel_mut_strat isa SDEStrategy
-            a, b, c = [current_pop[idx] for idx in rand(indices, 3)]
+            sample_indices = zeros(Int, 3)
+            let n = 0
+                while n < 3
+                    idx = rand(indices)
+                    if !(idx in @view sample_indices[1:n])
+                        n += 1
+                        sample_indices[n] = idx
+                    end
+                end
+            end
+            a, b, c = [current_pop[idx] for idx in sample_indices]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = a[k] + sel_mut_strat.omegas[k] * (b[k] - c[k])
@@ -168,11 +199,10 @@ function run_differential_evolution(
     while check(stopping_condition, stats)
         current_best = stats.best_solution_hist[end]
         
-        # Firing all cores with @spawn and map
+        # Task-parallelism firing all cores
         tasks = map(i -> Threads.@spawn(generate_mutant(i, population, scores, current_best)), 1:population_size)
         results = fetch.(tasks)
         
-        # Update population sequentially (or atomic-ly) to avoid race conditions
         for i in 1:population_size
             population[i], scores[i] = results[i]
         end
@@ -199,6 +229,8 @@ end
 # --- Full Benchmark Suite ---
 
 module Benchmarks
+    using Statistics
+    using Random
     const N = 8
     const M = 12
 
@@ -275,6 +307,7 @@ function main()
         ("Step", Benchmarks.step, [], Benchmarks.step_bounds...),
         ("Griewank", Benchmarks.griewank, [], Benchmarks.griewank_bounds...),
         ("Styblinski-Tang", Benchmarks.styblinski_tang, [], Benchmarks.styblinski_tang_bounds...),
+        ("Shekel", Benchmarks.shekel, [], Benchmarks.shekel_bounds...),
         ("Rastrigin", Benchmarks.rastrigin, [], Benchmarks.rastrigin_bounds...),
         ("Ackley", Benchmarks.ackley, [], Benchmarks.ackley_bounds...),
         ("Rotated Ellipsoid", Benchmarks.rotated_ellipsoid, [], Benchmarks.rotated_ellipsoid_bounds...),
