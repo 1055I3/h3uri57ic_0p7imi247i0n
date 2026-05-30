@@ -3,6 +3,7 @@ using Statistics
 using Base.Threads
 using Distributions: Normal
 using Optim
+using StatsBase: sample
 
 # --- Performance Stats ---
 
@@ -78,7 +79,10 @@ struct CrossoverSA <: CrossoverStrategy; end
 abstract type SelectionMutationStrategy end
 struct Rand1Strategy <: SelectionMutationStrategy; omega::Float64; end
 struct Best2Strategy <: SelectionMutationStrategy; nu::Float64; omega::Float64; end
-mutable struct SDEStrategy <: SelectionMutationStrategy; omegas::Vector{Float64}; SDEStrategy(dim::Int) = new([rand(Normal(0.5, 0.15)) for _ in 1:dim]); end
+mutable struct SDEStrategy <: SelectionMutationStrategy
+    omegas::Vector{Float64}
+    SDEStrategy(dim::Int) = new([rand(Normal(0.5, 0.15)) for _ in 1:dim])
+end
 
 # --- Core Logic ---
 
@@ -95,7 +99,6 @@ function run_differential_evolution(
     stats = PerformanceStats()
     dim = length(upper_bounds)
     
-    # Internal helpers
     new_chromosome() = [rand() * (upper_bounds[i] - lower_bounds[i]) + lower_bounds[i] for i in 1:dim]
     
     function enforce_bounds!(x)
@@ -115,6 +118,7 @@ function run_differential_evolution(
     end
 
     # Proper inner function for mutant generation
+    # Uses StatsBase.sample and mapping to avoid allocations and ensure sound unique sampling
     function generate_mutant(i, current_pop, current_scores, current_best)
         x = current_pop[i]
         
@@ -127,57 +131,35 @@ function run_differential_evolution(
         end
         u_mask[d_idx] = true
         
-        # Selection & Mutation
-        indices = setdiff(1:population_size, [i])
         v = copy(x)
-        
         if sel_mut_strat isa Rand1Strategy
-            # Ensure unique samples for mutation
-            sample_indices = zeros(Int, 3)
-            let n = 0
-                while n < 3
-                    idx = rand(indices)
-                    if !(idx in @view sample_indices[1:n])
-                        n += 1
-                        sample_indices[n] = idx
-                    end
-                end
-            end
-            a, b, c = [current_pop[idx] for idx in sample_indices]
+            # Sample 3 unique indices from 1:NP excluding i
+            raw_inds = sample(1:(population_size-1), 3, replace=false)
+            s_inds = [idx >= i ? idx + 1 : idx for idx in raw_inds]
+            
+            a, b, c = [current_pop[idx] for idx in s_inds]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = a[k] + sel_mut_strat.omega * (b[k] - c[k])
                 end
             end
         elseif sel_mut_strat isa Best2Strategy
-            sample_indices = zeros(Int, 4)
-            let n = 0
-                while n < 4
-                    idx = rand(indices)
-                    if !(idx in @view sample_indices[1:n])
-                        n += 1
-                        sample_indices[n] = idx
-                    end
-                end
-            end
-            a, b, c, d = [current_pop[idx] for idx in sample_indices]
+            # Sample 4 unique indices from 1:NP excluding i
+            raw_inds = sample(1:(population_size-1), 4, replace=false)
+            s_inds = [idx >= i ? idx + 1 : idx for idx in raw_inds]
+            
+            a, b, c, d = [current_pop[idx] for idx in s_inds]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = current_best[k] + sel_mut_strat.nu * (a[k] - b[k]) + sel_mut_strat.omega * (c[k] - d[k])
                 end
             end
         elseif sel_mut_strat isa SDEStrategy
-            sample_indices = zeros(Int, 3)
-            let n = 0
-                while n < 3
-                    idx = rand(indices)
-                    if !(idx in @view sample_indices[1:n])
-                        n += 1
-                        sample_indices[n] = idx
-                    end
-                end
-            end
-            a, b, c = [current_pop[idx] for idx in sample_indices]
+            # Sample 3 unique indices from 1:NP excluding i
+            raw_inds = sample(1:(population_size-1), 3, replace=false)
+            s_inds = [idx >= i ? idx + 1 : idx for idx in raw_inds]
+            
+            a, b, c = [current_pop[idx] for idx in s_inds]
             for k in 1:dim
                 if u_mask[k]
                     v[k] = a[k] + sel_mut_strat.omegas[k] * (b[k] - c[k])
@@ -212,8 +194,15 @@ function run_differential_evolution(
         # SDE self-adaptation
         if sel_mut_strat isa SDEStrategy
             new_omegas = copy(sel_mut_strat.omegas)
+            k_sample = min(dim, 3)
             for k in 1:dim
-                o_indices = rand(1:dim, 3)
+                # Sound unique sampling for strategy parameter evolution
+                # If dim < 3, we take all available or use replacement
+                o_indices = if dim >= 3
+                    sample(1:dim, 3, replace=false)
+                else
+                    sample(1:dim, 3, replace=true)
+                end
                 o1, o2, o3 = sel_mut_strat.omegas[o_indices[1]], sel_mut_strat.omegas[o_indices[2]], sel_mut_strat.omegas[o_indices[3]]
                 new_omegas[k] = o1 + rand(Normal(0, 0.5)) * (o2 - o3)
             end
@@ -224,6 +213,23 @@ function run_differential_evolution(
     end
     
     return stats
+end
+
+# --- Convenience Functions ---
+
+function de_rand_1_no_improvement(objective, constraints, ub, lb, pop_size, no_imp_iters, no_imp_thresh, p, omega)
+    return run_differential_evolution(objective, constraints, ub, lb, pop_size, 
+        NoImprovementStop(no_imp_iters, no_imp_thresh), BasicCrossover(p), Rand1Strategy(omega))
+end
+
+function de_best_2_no_improvement(objective, constraints, ub, lb, pop_size, no_imp_iters, no_imp_thresh, p, nu, omega)
+    return run_differential_evolution(objective, constraints, ub, lb, pop_size, 
+        NoImprovementStop(no_imp_iters, no_imp_thresh), BasicCrossover(p), Best2Strategy(nu, omega))
+end
+
+function sde_rand_1_no_improvement(objective, constraints, ub, lb, pop_size, no_imp_iters, no_imp_thresh)
+    return run_differential_evolution(objective, constraints, ub, lb, pop_size, 
+        NoImprovementStop(no_imp_iters, no_imp_thresh), CrossoverSA(), SDEStrategy(length(ub)))
 end
 
 # --- Full Benchmark Suite ---
@@ -283,7 +289,6 @@ function run_comparison(test_name, objective, de_stats)
     println("\n--- Results for $test_name ---")
     println("DE Best Score: ", round(de_stats.best_score_hist[end], digits=6), " (Evals: $(de_stats.eval_count[]))")
     
-    # Comparison using Optim.jl
     dim = length(de_stats.best_solution_hist[1])
     x0 = randn(dim)
     
@@ -295,7 +300,6 @@ function run_comparison(test_name, objective, de_stats)
 end
 
 function main()
-    # Check threads
     n_threads = Threads.nthreads()
     println("Running with $n_threads threads. (Use `julia -t auto` for best performance)")
     
@@ -314,7 +318,6 @@ function main()
         ("Keane Bump", kb.f, kb.c, kb.bounds...)
     ]
 
-    # Concurrent benchmark suite
     println("Starting parallel benchmark suite...")
     bench_tasks = map(tests) do (name, obj, cons, ub, lb)
         Threads.@spawn begin
