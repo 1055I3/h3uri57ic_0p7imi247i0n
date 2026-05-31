@@ -3,7 +3,7 @@ module Models
 using Base.Threads
 using Statistics
 
-export ζ_Stats, StopCond, SelecciónMutación, CrossoverStrat, compute_δ, update_ζ!
+export ζ_Stats, StopCond, SelectionMutation, CrossoverStrat, update_ζ!, compute_δ
 
 # --- Performance Statistics (ζ) ---
 
@@ -47,7 +47,7 @@ end
 # --- Abstract Types for Dispatch ---
 
 abstract type StopCond end
-abstract type SelecciónMutación end
+abstract type SelectionMutation end
 abstract type CrossoverStrat end
 
 end

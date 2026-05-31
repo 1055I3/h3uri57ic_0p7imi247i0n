@@ -1,9 +1,0 @@
-[1] Feoktistov, Vitaliy. Differential Evolution: In Search of Solutions. Springer (2006).
-[2] Kochenderfer, Mykel J., and Tim A. Wheeler. Algorithms for Optimization. MIT Press (2019).
-[3] Lampinen, Jouni, and Ivan Zelinka. "Mixed Variable Non-Linear Optimization by Differential Evolution." In Proceedings of Nostradamus'99, 2nd International Prediction Conference (1999).
-[4] Storn, Rainer, and Kenneth Price. "Differential Evolution—A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." Technical Report TR-95-012, International Computer Science Insitute (1995).
-[5] Storn, Rainer, and Kenneth Price. "Differential Evolution - A Simple and Efficient Heuristic for Global Optimization over Continuous Spaces." Journal of Global Optimization 11, no. 4 (1997)
-[6] Price, Kenneth V., Rainer M. Storn, and Jouni A. Lampinen. Differential Evolution: A Practical Approach to Global Optimization. Natural Computing Series, Springer (2005)
-[7] Omran, Mahamed G. H., Ayed Salman, and Andries P. Engelbrecht. "Self-adaptive Differential Evolution." Evolutionary Computation (2005)
-[8] AlKhulaifi, Dania, Maryam AlQahtani, Zenab AlSadeq, Atta-ur Rahman, and Dhiaa Musleh. "An Overview of Self-Adaptive Differential Evolution Algorithms with Mutation Strategy." Mathematical Modelling of Engineering Problems 9, no. 4 (2022).
-[9] Swagatam Das, Sankha Subhra Mullick, P.N. Suganthan. “Recent advances in differential evolution – An updated survey.” Swarm and Evolutionary Computation, Volume 27 (2016).

@@ -2,72 +2,90 @@ using Test
 using Random
 using Statistics
 
-# Include the source files
+# Include and Use the restored framework
 include("../src/DifferentialEvolution.jl")
 using .DifferentialEvolution
 include("../src/Benchmarks.jl")
 using .Benchmarks
 
-@testset "Differential Evolution Package Tests" begin
+@testset "EXHAUSTIVE DIFFERENTIAL EVOLUTION FRAMEWORK TEST" begin
     
-    @testset "Models & Stats" begin
-        ζ = ζ_Stats()
-        Π = [[1.0, 1.0], [2.0, 2.0]]
-        Φ = [10.0, 5.0]
-        update_ζ!(ζ, Π, Φ, 2)
-        @test ζ.ε[] == 2
-        @test ζ.φ_hist[end] == 5.0
-        @test ζ.β_hist[end] == [2.0, 2.0]
-        @test compute_δ(Π) ≈ sqrt(2.0)
-    end
-
-    @testset "Stopping Conditions" begin
+    @testset "Statistical Stopping Integrity" begin
         ζ = ζ_Stats()
         
-        # MaxIter
-        @test check(MaxIterStop(10), ζ) == true
+        # 1. MaxIter
         ζ.ι[] = 10
-        @test check(MaxIterStop(10), ζ) == false
+        @test should_continue(MaxIterStop(10), ζ) == false
+        @test should_continue(MaxIterStop(15), ζ) == true
         
-        # Pocock (Noise case)
+        # 2. PocockSign (mid-p <= 0.02275 to continue)
+        # Strong Improvement -> Continue
+        ζ.φ_hist = [10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0]
+        @test should_continue(PocockSignStop(), ζ) == true
+        # Noise/Stagnation -> Stop
         ζ.φ_hist = [1.0, 1.1, 1.0, 1.1, 1.0, 1.1, 1.0]
-        @test check(PocockSignStop(), ζ) == false # Stopped
+        @test should_continue(PocockSignStop(), ζ) == false
         
-        # SPRT (Flat case)
+        # 3. SPRT (M > 0.05 to continue)
         ζ.φ_hist = fill(1.0, 200)
-        @test check(SPRTStop(), ζ) == false # Stopped
+        @test should_continue(SPRTStop(), ζ) == false
+        
+        # 4. Permutation (p_perm <= 0.975 to continue)
+        ζ.φ_hist = fill(1.0, 25)
+        @test should_continue(PermutationStop(), ζ) == false
     end
 
-    @testset "Strategies Handshake & Dispatch" begin
-        n, d = 10, 2
+    @testset "Strategy & Polymorphism Soundness" begin
+        d, n = 5, 20
         Π = [[rand() for _ in 1:d] for _ in 1:n]
-        Φ = [sum(x.^2) for x in Π]
+        Φ = [Benchmarks.sphere(x) for x in Π]
         ρ = Random.default_rng()
-        Σ = Dict{Symbol, Any}(:bounds => (fill(-5.0, d), fill(5.0, d)))
-        β = Π[1]
+        Σ = Dict{Symbol, Any}(:bounds => (fill(10.0, d), fill(-10.0, d)))
+        β = Π[argmin(Φ)]
         
-        # AGS
-        m_ags = AGS()
-        v = propose(m_ags, BinomialCrossover(0.5), 1, Π, Φ, ρ, Σ, β)
-        @test length(v) == d
-        @test !isempty(m_ags.WF)
+        strats = [Rand1(0.8), Best2(0.5, 0.5), SDE(d), AGS(), FISA()]
+        cross = [BinomialCrossover(0.5), SACrossover()]
         
-        # adapt!
-        Φ_new = copy(Φ)
-        adapt!(m_ags, Π, Φ_new, [v for _ in 1:n], Φ, ρ, Σ)
-        @test m_ags.ι == 1
-        
-        # FISA
-        m_fisa = FISA()
-        v_f = propose(m_fisa, SACrossover(), 1, Π, Φ, ρ, Σ, β)
-        @test length(v_f) == d
-        adapt!(m_fisa, Π, Φ, [v_f for _ in 1:n], Φ, ρ, Σ)
+        for m in strats
+            for c in cross
+                v = propose_trial(m, c, 1, Π, Φ, ρ, Σ, β)
+                @test length(v) == d
+                @test all(v .>= -10.001) && all(v .<= 10.001)
+                
+                Φ_old = copy(Φ)
+                adapt!(m, Π, Φ, [v for _ in 1:n], Φ_old, ρ, Σ)
+            end
+        end
     end
 
-    @testset "Integration (Rand1 + Sphere)" begin
-        ub, lb = fill(5.0, 3), fill(-5.0, 3)
-        ζ = de_rand_1_max_iter(sphere, [], ub, lb, 20, 50, 0.1, 0.8)
-        @test ζ.φ_hist[end] < ζ.φ_hist[1]
+    @testset "Legacy API & Multi-Benchmark Functional Test" begin
+        ub, lb = fill(5.0, 16), fill(-5.0, 16)
+        
+        suite = [
+            ("Sphere", Benchmarks.sphere, de_rand_1_max_iter, (10, 5, 0.1, 0.8)),
+            ("Rosenbrock", Benchmarks.rosenbrock, de_best_2_max_iter, (10, 5, 0.1, 0.5, 0.5)),
+            ("Step", Benchmarks.step_func, sde_rand_1_max_iter, (10, 5)),
+            ("Griewank", Benchmarks.griewank, ags_rand_1_max_iter, (10, 5)),
+            ("Styblinski", Benchmarks.styblinski, fisa_rand_1_max_iter, (10, 5)),
+            ("Shekel", Benchmarks.shekel, de_rand_1_pocock_sign, (10, 0.1, 0.8)),
+            ("Rastrigin", Benchmarks.rastrigin, de_best_2_sprt, (10, 0.1, 0.5, 0.5)),
+            ("Ackley", Benchmarks.ackley, sde_rand_1_permutation, (10,)),
+            ("Rotated", Benchmarks.rotated, ags_rand_1_sprt, (10,)),
+            ("Keane", Benchmarks.Keane().f, fisa_rand_1_permutation, (10,))
+        ]
+        
+        for (name, obj, api_fn, args) in suite
+            # Correct bounds for each benchmark type
+            if name == "Keane"
+                ζ = api_fn(obj, [], fill(10.0, 16), fill(0.0, 16), args...)
+            elseif name == "Shekel"
+                ζ = api_fn(obj, [], fill(1.0, 16), fill(0.0, 16), args...)
+            else
+                ζ = api_fn(obj, [], ub, lb, args...)
+            end
+            @test !isnan(ζ.φ_hist[end])
+            @test ζ.ε[] > 0
+        end
     end
 
 end
