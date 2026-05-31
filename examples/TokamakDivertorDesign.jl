@@ -204,7 +204,7 @@ function main()
     
     t0 = time()
     # Execute Optimization using Restored Legacy API
-    ζ = ags_rand_1_max_ι(tokamak_objective, [], ub, lb, 60, 250)
+    ζ = ags_rand_1_max_ι(tokamak_objective, [], ub, lb, 4 * N_PARAMS, 250)
     
     report_tokamak_results(ζ, ζ.β_hist[end])
 end

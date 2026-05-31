@@ -56,8 +56,8 @@ function run_exhaustive_benchmarks()
         ref_scores[i, :] = [ref.nm_score, ref.sa_score, ref.ps_score]
 
         for (j, (s_name, api_call)) in enumerate(strategies)
-            # Use a consistent budget of 150 iterations and pop_size 40
-            ζ = api_call(obj, ub, lb, 40, 150)
+            # Use a consistent budget of 150 iterations and pop_size = 4 * dim
+            ζ = api_call(obj, ub, lb, 4 * dim, 150)
             
             scores[i, j] = ζ.φ_hist[end]
             evals[i, j] = ζ.ε[]
