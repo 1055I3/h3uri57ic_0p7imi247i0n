@@ -1,0 +1,20 @@
+name = "DifferentialEvolution"
+uuid = "a1b2c3d4-e5f6-4a5b-8c9d-0e1f2a3b4c5d"
+authors = ["Gemini CLI"]
+version = "1.0.0"
+
+[deps]
+Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-991b2c6c9b91"
+Optim = "429524aa-b389-53e4-98c9-96191562953b"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
+SpecialFunctions = "276daf66-3868-5448-9aa4-40619dea304a"
+Statistics = "10745b16-917e-515c-9227-cd7559902ee1"
+StatsBase = "2913bbd2-9723-5483-bc32-581079e0592f"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c523dd2232"
+
+[targets]
+test = ["Test"]
