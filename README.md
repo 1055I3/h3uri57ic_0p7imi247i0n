@@ -1,6 +1,6 @@
+[![Julia](https://img.shields.io/badge/Made%20with-Julia-9558B2?logo=julia&logoColor=white)](https://julialang.org/)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
 [![Windows](https://img.shields.io/badge/Windows-0078D6)](https://en.wikipedia.org/wiki/Windows_10)
-[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
 [![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
 
 # Pure Julia Differential Evolution Framework
