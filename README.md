@@ -1,56 +1,82 @@
-# DifferentialEvolution.jl
+# Pure Julia Differential Evolution Framework
 
-A high-performance, parallelized, and feature-complete Differential Evolution (DE) optimization framework implemented in pure Julia.
+A high-fidelity, modular, and parallelized Differential Evolution (DE) framework implemented in pure Julia (1.10+).
 
-## Project Structure
+## Project Overview
 
-- `src/`: Core package source code.
-  - `Models.jl`: Data structures and abstract types.
-  - `Strategies.jl`: Selection and mutation strategies (Rand1, Best2, SDE, AGS, FISA).
-  - `Crossover.jl`: Recombination logic (Binomial, SA).
-  - `StoppingConditions.jl`: Rigorous statistical stopping criteria (Pocock, SPRT, Permutation).
-  - `Benchmarks.jl`: Standard optimization test functions (Sphere, Rosenbrock, Shekel, etc.).
-  - `DifferentialEvolution.jl`: Main module and generic engine.
-- `test/`: Comprehensive unit and integration test suite.
-- `examples/`: Real-world engineering applications.
-  - `AirfoilOptimization.jl`: 12-parameter aerodynamic shape optimization study.
-- `config/`: Configuration files (if any).
-
-## Installation
-
-Ensure you have Julia 1.10+ installed.
-
-```bash
-# Clone the repository
-git clone <repo-url>
-cd h3uri57ic_0p7imi247i0n
-
-# Install dependencies
-julia -e 'using Pkg; Pkg.activate("."); Pkg.instantiate()'
-```
-
-## Usage
-
-### Running Tests
-To verify the system integrity:
-```bash
-julia -t auto test/runtests.jl
-```
-
-### Running Examples
-To run the airfoil optimization study:
-```bash
-julia -t auto examples/AirfoilOptimization.jl
-```
+This repository provides an engineering-grade Differential Evolution framework designed for parallelized, robust, and statistically sound global optimization. It emphasizes multiple dispatch, type safety, and modularity, making it suitable for both academic benchmarking and complex engineering optimization problems.
 
 ## Features
 
-- **High-Fidelity Restoration:** 100% API compatibility with legacy implementations.
-- **Advanced Parallelism:** Efficient multi-core utilization via `Threads.@spawn`.
-- **Mathematical Rigor:** Exact statistical stopping conditions with Unicode/Greek notation support.
-- **Polymorphic Dispatch:** extensible architecture using Julia's multiple dispatch system.
-- **Self-Adaptive Strategies:** State-of-the-art AGS and FISA algorithms included.
+- **Parallel Execution:** Leverages `Threads.@spawn` for high-throughput population evolution.
+- **Multiple Dispatch Architecture:** Defines clear abstractions (`StopCond`, `SelectionMutation`, `CrossoverStrat`) to allow easy extension of strategies without modifying core logic.
+- **Statistical Stopping Conditions:** Includes advanced, parameter-free stopping rules (`PocockSignStop`, `SPRTStop`, `PermutationStop`) based on the convergence history.
+- **Legacy API Support:** Re-exports standard DE API entry points (e.g., `de_rand_1_max_ι`) for backward compatibility with common benchmarking conventions.
+- **Engineering-Grade Examples:** Includes high-fidelity models for:
+    - Airfoil Shape Optimization
+    - Tokamak Divertor Design
+    - Electrical Distribution Network Optimization
+    - Multiplex PCR Panel Configuration
+- **Robustness:** Includes Monte Carlo simulation hooks and multi-point objective aggregation for real-world design stability.
 
-## Contributing
+## Installation
 
-Follow standard Julia development practices. Ensure all new features are modularized in `src/` and covered by tests in `test/`.
+This project requires Julia 1.10 or higher. Ensure the dependencies are installed:
+
+```bash
+julia --project -e 'using Pkg; Pkg.instantiate()'
+```
+
+## Basic Usage
+
+The framework utilizes a modular API. Example usage for an optimization problem:
+
+```julia
+using DifferentialEvolution
+# Note: Ensure the framework modules are in the load path
+
+# Define objective, bounds, population size, and iteration limit
+function my_objective(p::Vector{Float64})
+    # ... implementation ...
+end
+
+lb = fill(-1.0, 5)
+ub = fill(1.0, 5)
+n_pop = 20
+max_iter = 100
+
+# Execute using self-adaptive strategy
+ζ = ags_rand_1_max_ι(my_objective, [], ub, lb, n_pop, max_iter)
+
+# Access best solution
+best_solution = ζ.β_hist[end]
+```
+
+## Main Modules
+
+- `Models.jl`: Core data structures (`ζ_Stats`) for performance tracking and statistics.
+- `StoppingConditions.jl`: Polymorphic termination criteria (`should_continue`).
+- `Strategies.jl`: Implementation of DE mutation/selection strategies (`Rand1`, `Best2`, `AGS`, `FISA`, etc.).
+- `Crossover.jl`: Modular crossover strategies (`Binomial`, `SA`).
+- `Benchmarks.jl`: Standard mathematical test functions for framework validation.
+- `DifferentialEvolution.jl`: Primary module exporting the public API and engine logic.
+
+## Engineering Examples
+
+The `examples/` directory contains complete, runnable engineering studies. To run a study, use:
+
+```bash
+julia -t auto examples/AirfoilOptimization.jl
+julia -t auto examples/TokamakDivertorDesign.jl
+julia -t auto examples/ElectricalNetworkDesign.jl
+julia -t auto examples/PCRPanelOptimization.jl
+```
+
+## Important Assumptions
+- The framework assumes objective functions return a single scalar value.
+- Constraints are handled via soft penalties within the evaluation function.
+- Statistical stopping conditions (`SPRT`, `Permutation`) assume sufficient iteration history for validity. All examples use a `CompositeStop` wrapper for deterministic iteration bounds in testing.
+
+## License
+
+This project is licensed under the terms described in the `LICENSE` file.
