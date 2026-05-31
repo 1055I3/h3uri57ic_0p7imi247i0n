@@ -1,3 +1,8 @@
+[![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](https://opensource.org/licenses/BSD-3-Clause)
+[![Windows](https://img.shields.io/badge/Windows-0078D6)](https://en.wikipedia.org/wiki/Windows_10)
+[![Python](https://img.shields.io/badge/Python-3.12-blue)](https://www.python.org/)
+[![No Maintenance Intended](http://unmaintained.tech/badge.svg)](http://unmaintained.tech/)
+
 # Pure Julia Differential Evolution Framework
 
 A high-fidelity, modular, and parallelized Differential Evolution (DE) framework implemented in pure Julia (1.10+).
