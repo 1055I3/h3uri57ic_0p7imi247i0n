@@ -198,13 +198,14 @@ function export_airfoil_results(ζ::ζ_Stats, best_p::Vector{Float64}, time_s::F
     
     save_comprehensive_report(ζ, "Airfoil_Optimization")
     
-    println("\n" * "*"^60)
+    println("
+" * "*"^60)
     println("RESTORATION COMPLETE: AIRFOIL OPTIMIZATION STUDY")
     println("*"^60)
     println("Performance Envelopes:")
     for a in [0.0, 4.0, 8.0]
         cl, cd, _ = solve_aerodynamics(m, a, RE_CRUISE)
-        println("  - α = $a°: Cl = $(round(cl,3)), Cd = $(round(cd,5)), L/D = $(round(cl/cd,2))")
+        println("  - α = $(a)°: Cl = $(round(cl,digits=3)), Cd = $(round(cd,digits=5)), L/D = $(round(cl/cd,digits=2))")
     end
     println("-"^60)
     
@@ -218,16 +219,10 @@ function export_airfoil_results(ζ::ζ_Stats, best_p::Vector{Float64}, time_s::F
     end
     
     # Main Plot (Professional Layout)
-    p_geom = plot(m.x, [m.yu, m.yl], color=:blue, fillrange=[m.yl, m.yu], fillalpha=0.1, aspect_ratio=:equal, title="Optimized Aero-Profile", label="")
-    p_κ = plot(m.x, m.κ, color=:purple, title="Curvature Map", yscale=:log10, label="")
-    p_ld = plot(as, lds, color=:orange, lw=2, title="Efficiency L/D", label="")
-    p_polar = plot(cds, cls, color=:black, lw=1.5, title="Drag Polar", label="")
-    p_conv = plot(1:length(ζ.φ_hist), -ζ.φ_hist, color=:green, title="Convergence History", label="")
-    p_div = plot(1:length(ζ.δ_hist), ζ.δ_hist, color=:grey, title="Strategy Diversity", label="")
-    
-    study_plot = plot(p_geom, p_κ, p_ld, p_polar, p_conv, p_div, layout=(3,2), size=(1300, 1200), dpi=300)
-    savefig("Airfoil_Restoration_Study_Plot.png")
-    println("Exhaustive study visualization saved to 'Airfoil_Restoration_Study_Plot.png'.")
+    p_geom = plot(m.x, m.yl, fillrange=m.yu, fillalpha=0.1, label="Airfoil Area", color=:blue, 
+                  aspect_ratio=:equal, title="Optimized Aero-Profile", xlabel="x/c", ylabel="y/c")
+    plot!(p_geom, m.x, m.yu, label="Upper Surface", color=:blue, lw=1.5)
+    plot!(p_geom, m.x, m.yc, label="Mean Camber", color=:red, linestyle=:dash, lw=1.5)
 end
 
 function main()
@@ -240,7 +235,7 @@ function main()
     
     t_start = time()
     # Using the legacy-restored API with the new AGS strategy
-    ζ = ags_rand_1_max_ι(exhaustive_airfoil_objective, [], ub, lb, 48, 200)
+    ζ = ags_rand_1_max_iter(exhaustive_airfoil_objective, [], ub, lb, 48, 200)
     
     export_airfoil_results(ζ, ζ.β_hist[end], time() - t_start)
 end
