@@ -64,7 +64,7 @@ function run_differential_evolution(obj, cons, ub, lb, n, stop, crossover, m_str
     while StoppingConditions.should_continue(stop, ζ)
         βest = ζ.β_hist[end]
         
-        # Proper Parallelism
+        # Proper Parallelism: Fire All Cores
         tasks = map(i -> Threads.@spawn(evolve_individual(i, Π, Φ, βest)), 1:n)
         results = fetch.(tasks)
         
@@ -80,12 +80,12 @@ function run_differential_evolution(obj, cons, ub, lb, n, stop, crossover, m_str
     return ζ
 end
 
-# --- Public API Functions ---
+# --- Public API Functions (Greek-Suffixed Legacy Naming) ---
 
 # Rand1
-export de_rand_1_max_iter, de_rand_1_fitness_threshold, de_rand_1_no_improvement, de_rand_1_pocock_sign, de_rand_1_sprt, de_rand_1_permutation, de_rand_1_max_runtime
-de_rand_1_max_iter(o, c, ub, lb, n, m, p, ω) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(p), Rand1(ω))
-de_rand_1_fitness_threshold(o, c, ub, lb, n, θ, p, ω) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(p), Rand1(ω))
+export de_rand_1_max_ι, de_rand_1_fitness_θ, de_rand_1_no_improvement, de_rand_1_pocock_sign, de_rand_1_sprt, de_rand_1_permutation, de_rand_1_max_runtime
+de_rand_1_max_ι(o, c, ub, lb, n, m, p, ω) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(p), Rand1(ω))
+de_rand_1_fitness_θ(o, c, ub, lb, n, θ, p, ω) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(p), Rand1(ω))
 de_rand_1_no_improvement(o, c, ub, lb, n, ni, nt, p, ω) = run_differential_evolution(o, c, ub, lb, n, no_improvement(ni, nt), BinomialCrossover(p), Rand1(ω))
 de_rand_1_pocock_sign(o, c, ub, lb, n, p, ω) = run_differential_evolution(o, c, ub, lb, n, pocock_sign(), BinomialCrossover(p), Rand1(ω))
 de_rand_1_sprt(o, c, ub, lb, n, p, ω) = run_differential_evolution(o, c, ub, lb, n, sprt(), BinomialCrossover(p), Rand1(ω))
@@ -93,9 +93,9 @@ de_rand_1_permutation(o, c, ub, lb, n, p, ω) = run_differential_evolution(o, c,
 de_rand_1_max_runtime(o, c, ub, lb, n, t, p, ω) = run_differential_evolution(o, c, ub, lb, n, max_runtime(t), BinomialCrossover(p), Rand1(ω))
 
 # Best2
-export de_best_2_max_iter, de_best_2_fitness_threshold, de_best_2_no_improvement, de_best_2_pocock_sign, de_best_2_sprt, de_best_2_permutation, de_best_2_max_runtime
-de_best_2_max_iter(o, c, ub, lb, n, m, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(p), Best2(ν, ω))
-de_best_2_fitness_threshold(o, c, ub, lb, n, θ, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(p), Best2(ν, ω))
+export de_best_2_max_ι, de_best_2_fitness_θ, de_best_2_no_improvement, de_best_2_pocock_sign, de_best_2_sprt, de_best_2_permutation, de_best_2_max_runtime
+de_best_2_max_ι(o, c, ub, lb, n, m, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(p), Best2(ν, ω))
+de_best_2_fitness_θ(o, c, ub, lb, n, θ, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(p), Best2(ν, ω))
 de_best_2_no_improvement(o, c, ub, lb, n, ni, nt, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, no_improvement(ni, nt), BinomialCrossover(p), Best2(ν, ω))
 de_best_2_pocock_sign(o, c, ub, lb, n, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, pocock_sign(), BinomialCrossover(p), Best2(ν, ω))
 de_best_2_sprt(o, c, ub, lb, n, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, sprt(), BinomialCrossover(p), Best2(ν, ω))
@@ -103,9 +103,9 @@ de_best_2_permutation(o, c, ub, lb, n, p, ν, ω) = run_differential_evolution(o
 de_best_2_max_runtime(o, c, ub, lb, n, t, p, ν, ω) = run_differential_evolution(o, c, ub, lb, n, max_runtime(t), BinomialCrossover(p), Best2(ν, ω))
 
 # SDE
-export sde_rand_1_max_iter, sde_rand_1_fitness_threshold, sde_rand_1_no_improvement, sde_rand_1_pocock_sign, sde_rand_1_sprt, sde_rand_1_permutation, sde_rand_1_max_runtime
-sde_rand_1_max_iter(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), SACrossover(), SDE(length(ub)))
-sde_rand_1_fitness_threshold(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), SACrossover(), SDE(length(ub)))
+export sde_rand_1_max_ι, sde_rand_1_fitness_θ, sde_rand_1_no_improvement, sde_rand_1_pocock_sign, sde_rand_1_sprt, sde_rand_1_permutation, sde_rand_1_max_runtime
+sde_rand_1_max_ι(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), SACrossover(), SDE(length(ub)))
+sde_rand_1_fitness_θ(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), SACrossover(), SDE(length(ub)))
 sde_rand_1_no_improvement(o, c, ub, lb, n, ni, nt) = run_differential_evolution(o, c, ub, lb, n, no_improvement(ni, nt), SACrossover(), SDE(length(ub)))
 sde_rand_1_pocock_sign(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, pocock_sign(), SACrossover(), SDE(length(ub)))
 sde_rand_1_sprt(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, sprt(), SACrossover(), SDE(length(ub)))
@@ -113,9 +113,9 @@ sde_rand_1_permutation(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, l
 sde_rand_1_max_runtime(o, c, ub, lb, n, t) = run_differential_evolution(o, c, ub, lb, n, max_runtime(t), SACrossover(), SDE(length(ub)))
 
 # AGS
-export ags_rand_1_max_iter, ags_rand_1_fitness_threshold, ags_rand_1_no_improvement, ags_rand_1_pocock_sign, ags_rand_1_sprt, ags_rand_1_permutation, ags_rand_1_max_runtime
-ags_rand_1_max_iter(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(0.1), AGS())
-ags_rand_1_fitness_threshold(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(0.1), AGS())
+export ags_rand_1_max_ι, ags_rand_1_fitness_θ, ags_rand_1_no_improvement, ags_rand_1_pocock_sign, ags_rand_1_sprt, ags_rand_1_permutation, ags_rand_1_max_runtime
+ags_rand_1_max_ι(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), BinomialCrossover(0.1), AGS())
+ags_rand_1_fitness_θ(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), BinomialCrossover(0.1), AGS())
 ags_rand_1_no_improvement(o, c, ub, lb, n, ni, nt) = run_differential_evolution(o, c, ub, lb, n, no_improvement(ni, nt), BinomialCrossover(0.1), AGS())
 ags_rand_1_pocock_sign(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, pocock_sign(), BinomialCrossover(0.1), AGS())
 ags_rand_1_sprt(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, sprt(), BinomialCrossover(0.1), AGS())
@@ -123,9 +123,9 @@ ags_rand_1_permutation(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, l
 ags_rand_1_max_runtime(o, c, ub, lb, n, t) = run_differential_evolution(o, c, ub, lb, n, max_runtime(t), BinomialCrossover(0.1), AGS())
 
 # FISA
-export fisa_rand_1_max_iter, fisa_rand_1_fitness_threshold, fisa_rand_1_no_improvement, fisa_rand_1_pocock_sign, fisa_rand_1_sprt, fisa_rand_1_permutation, fisa_rand_1_max_runtime
-fisa_rand_1_max_iter(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), SACrossover(), FISA())
-fisa_rand_1_fitness_threshold(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), SACrossover(), FISA())
+export fisa_rand_1_max_ι, fisa_rand_1_fitness_θ, fisa_rand_1_no_improvement, fisa_rand_1_pocock_sign, fisa_rand_1_sprt, fisa_rand_1_permutation, fisa_rand_1_max_runtime
+fisa_rand_1_max_ι(o, c, ub, lb, n, m) = run_differential_evolution(o, c, ub, lb, n, max_iter(m), SACrossover(), FISA())
+fisa_rand_1_fitness_θ(o, c, ub, lb, n, θ) = run_differential_evolution(o, c, ub, lb, n, fitness_threshold(θ), SACrossover(), FISA())
 fisa_rand_1_no_improvement(o, c, ub, lb, n, ni, nt) = run_differential_evolution(o, c, ub, lb, n, no_improvement(ni, nt), SACrossover(), FISA())
 fisa_rand_1_pocock_sign(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, pocock_sign(), SACrossover(), FISA())
 fisa_rand_1_sprt(o, c, ub, lb, n) = run_differential_evolution(o, c, ub, lb, n, sprt(), SACrossover(), FISA())

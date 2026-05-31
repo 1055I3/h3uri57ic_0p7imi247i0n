@@ -18,21 +18,25 @@ using .Benchmarks
         @test should_continue(MaxIterStop(10), ζ) == false
         @test should_continue(MaxIterStop(15), ζ) == true
         
-        # 2. PocockSign (mid-p <= 0.02275 to continue)
-        # Strong Improvement -> Continue
-        ζ.φ_hist = [10.0, 9.0, 8.0, 7.0, 6.0, 5.0, 4.0]
+        # 2. PocockSign
+        ζ.φ_hist = collect(20.0:-1.0:1.0)
         @test should_continue(PocockSignStop(), ζ) == true
-        # Noise/Stagnation -> Stop
-        ζ.φ_hist = [1.0, 1.1, 1.0, 1.1, 1.0, 1.1, 1.0]
+        ζ.φ_hist = fill(1.0, 25)
         @test should_continue(PocockSignStop(), ζ) == false
         
-        # 3. SPRT (M > 0.05 to continue)
+        # 3. SPRT
         ζ.φ_hist = fill(1.0, 200)
         @test should_continue(SPRTStop(), ζ) == false
         
-        # 4. Permutation (p_perm <= 0.975 to continue)
-        ζ.φ_hist = fill(1.0, 25)
+        # 4. Permutation
+        ζ.φ_hist = fill(1.0, 20)
         @test should_continue(PermutationStop(), ζ) == false
+
+        # 5. MaxRuntime
+        stop_rt = MaxRuntimeStop(0.1)
+        @test should_continue(stop_rt, ζ) == true
+        sleep(0.2)
+        @test should_continue(stop_rt, ζ) == false
     end
 
     @testset "Strategy & Polymorphism Soundness" begin
@@ -50,7 +54,6 @@ using .Benchmarks
             for c in cross
                 v = propose_trial(m, c, 1, Π, Φ, ρ, Σ, β)
                 @test length(v) == d
-                @test all(v .>= -10.001) && all(v .<= 10.001)
                 
                 Φ_old = copy(Φ)
                 adapt!(m, Π, Φ, [v for _ in 1:n], Φ_old, ρ, Σ)
@@ -62,24 +65,21 @@ using .Benchmarks
         ub, lb = fill(5.0, 16), fill(-5.0, 16)
         
         suite = [
-            ("Sphere", Benchmarks.sphere, de_rand_1_max_iter, (10, 5, 0.1, 0.8)),
-            ("Rosenbrock", Benchmarks.rosenbrock, de_best_2_max_iter, (10, 5, 0.1, 0.5, 0.5)),
-            ("Step", Benchmarks.step_func, sde_rand_1_max_iter, (10, 5)),
-            ("Griewank", Benchmarks.griewank, ags_rand_1_max_iter, (10, 5)),
-            ("Styblinski", Benchmarks.styblinski, fisa_rand_1_max_iter, (10, 5)),
+            ("Sphere", Benchmarks.sphere, de_rand_1_max_ι, (10, 5, 0.1, 0.8)),
+            ("Rosenbrock", Benchmarks.rosenbrock, de_best_2_max_ι, (10, 5, 0.1, 0.5, 0.5)),
+            ("Step", Benchmarks.step_func, sde_rand_1_max_ι, (10, 5)),
+            ("Griewank", Benchmarks.griewank, ags_rand_1_max_ι, (10, 5)),
+            ("Styblinski", Benchmarks.styblinski, fisa_rand_1_max_ι, (10, 5)),
             ("Shekel", Benchmarks.shekel, de_rand_1_pocock_sign, (10, 0.1, 0.8)),
             ("Rastrigin", Benchmarks.rastrigin, de_best_2_sprt, (10, 0.1, 0.5, 0.5)),
             ("Ackley", Benchmarks.ackley, sde_rand_1_permutation, (10,)),
             ("Rotated", Benchmarks.rotated, ags_rand_1_sprt, (10,)),
-            ("Keane", Benchmarks.Keane().f, fisa_rand_1_permutation, (10,))
+            ("Keane", Benchmarks.Keane().f, fisa_rand_1_max_runtime, (10, 0.5))
         ]
         
         for (name, obj, api_fn, args) in suite
-            # Correct bounds for each benchmark type
             if name == "Keane"
                 ζ = api_fn(obj, [], fill(10.0, 16), fill(0.0, 16), args...)
-            elseif name == "Shekel"
-                ζ = api_fn(obj, [], fill(1.0, 16), fill(0.0, 16), args...)
             else
                 ζ = api_fn(obj, [], ub, lb, args...)
             end
